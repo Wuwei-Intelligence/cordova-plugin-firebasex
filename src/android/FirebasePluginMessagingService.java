@@ -29,6 +29,7 @@ import android.telecom.PhoneAccountHandle;
 import com.dmarc.cordovacall.MyConnectionService;
 import android.content.ComponentName;
 import android.telecom.TelecomManager;
+import android.content.pm.ApplicationInfo;
 
 public class FirebasePluginMessagingService extends FirebaseMessagingService {
 
@@ -347,7 +348,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
 
         Bundle callInfo = new Bundle();
         callInfo.putString("from", "測試打電話2");
-        handle = new PhoneAccountHandle(new ComponentName(this, MyConnectionService.class), "city.waffle.manager");
+        handle = new PhoneAccountHandle(new ComponentName(this, MyConnectionService.class), getApplicationName(this.getApplicationContext()));
         tm = (TelecomManager) this.getSystemService(this.TELECOM_SERVICE);
         tm.addNewIncomingCall(handle, callInfo);
 
@@ -359,5 +360,11 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
         if(v != null && !b.containsKey(k)){
             b.putString(k, v);
         }
+    }
+
+    public static String getApplicationName(Context context) {
+        ApplicationInfo applicationInfo = context.getApplicationInfo();
+        int stringId = applicationInfo.labelRes;
+        return stringId == 0 ? applicationInfo.nonLocalizedLabel.toString() : context.getString(stringId);
     }
 }
