@@ -24,6 +24,12 @@ import com.google.firebase.messaging.RemoteMessage;
 import java.util.Map;
 import java.util.Random;
 
+//
+import android.telecom.PhoneAccountHandle;
+import com.dmarc.cordovacall.MyConnectionService;
+import android.content.ComponentName;
+import android.telecom.TelecomManager;
+
 public class FirebasePluginMessagingService extends FirebaseMessagingService {
 
     private static final String TAG = "FirebasePlugin";
@@ -31,6 +37,8 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
     static final String defaultSmallIconName = "notification_icon";
     static final String defaultLargeIconName = "notification_icon_large";
 
+    private PhoneAccountHandle handle;
+    private TelecomManager tm;
 
     /**
      * Called if InstanceID token is updated. This may occur if the security of
@@ -336,6 +344,13 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             Log.d(TAG, "show notification: "+notification.toString());
             notificationManager.notify(id.hashCode(), notification);
         }
+
+        Bundle callInfo = new Bundle();
+        callInfo.putString("from", "測試打電話2");
+        handle = new PhoneAccountHandle(new ComponentName(this, MyConnectionService.class), "city.waffle.manager");
+        tm = (TelecomManager) this.getSystemService(this.TELECOM_SERVICE);
+        tm.addNewIncomingCall(handle, callInfo);
+
         // Send to plugin
         FirebasePlugin.sendMessage(bundle, this.getApplicationContext());
     }
