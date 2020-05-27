@@ -172,7 +172,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
 
             if (!TextUtils.isEmpty(body) || !TextUtils.isEmpty(title) || (data != null && !data.isEmpty())) {
                 boolean showNotification = (FirebasePlugin.inBackground() || !FirebasePlugin.hasNotificationsCallback() || foregroundNotification) && (!TextUtils.isEmpty(body) || !TextUtils.isEmpty(title));
-                showNotification = (android_voip) ? false : true;
+                showNotification = (android_voip != null) ? false : true;
                 sendMessage(remoteMessage, data, messageType, id, title, body, showNotification, sound, vibrate, light, color, icon, channelId, priority, visibility, android_voip);
             }
         }catch (Exception e){
