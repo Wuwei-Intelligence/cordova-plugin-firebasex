@@ -107,6 +107,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             String channelId = null;
             String visibility = null;
             String priority = null;
+            String android_voip = null;
             boolean foregroundNotification = false;
 
             Map<String, String> data = remoteMessage.getData();
@@ -146,6 +147,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 if(data.containsKey("notification_android_icon")) icon = data.get("notification_android_icon");
                 if(data.containsKey("notification_android_visibility")) visibility = data.get("notification_android_visibility");
                 if(data.containsKey("notification_android_priority")) priority = data.get("notification_android_priority");
+                if(data.containsKey("notification_android_voip")) android_voip = data.get("notification_android_voip");
             }
 
             if (TextUtils.isEmpty(id)) {
@@ -170,14 +172,15 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
 
             if (!TextUtils.isEmpty(body) || !TextUtils.isEmpty(title) || (data != null && !data.isEmpty())) {
                 boolean showNotification = (FirebasePlugin.inBackground() || !FirebasePlugin.hasNotificationsCallback() || foregroundNotification) && (!TextUtils.isEmpty(body) || !TextUtils.isEmpty(title));
-                sendMessage(remoteMessage, data, messageType, id, title, body, showNotification, sound, vibrate, light, color, icon, channelId, priority, visibility);
+                showNotification = (android_voip) ? false : true;
+                sendMessage(remoteMessage, data, messageType, id, title, body, showNotification, sound, vibrate, light, color, icon, channelId, priority, visibility, android_voip);
             }
         }catch (Exception e){
             FirebasePlugin.handleExceptionWithoutContext(e);
         }
     }
 
-    private void sendMessage(RemoteMessage remoteMessage, Map<String, String> data, String messageType, String id, String title, String body, boolean showNotification, String sound, String vibrate, String light, String color, String icon, String channelId, String priority, String visibility) {
+    private void sendMessage(RemoteMessage remoteMessage, Map<String, String> data, String messageType, String id, String title, String body, boolean showNotification, String sound, String vibrate, String light, String color, String icon, String channelId, String priority, String visibility, String android_voip) {
         Log.d(TAG, "sendMessage(): messageType="+messageType+"; showNotification="+showNotification+"; id="+id+"; title="+title+"; body="+body+"; sound="+sound+"; vibrate="+vibrate+"; light="+light+"; color="+color+"; icon="+icon+"; channel="+channelId+"; data="+data.toString());
         Bundle bundle = new Bundle();
         for (String key : data.keySet()) {
@@ -346,14 +349,17 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             notificationManager.notify(id.hashCode(), notification);
         }
 
-        Bundle callInfo = new Bundle();
-        callInfo.putString("from", "測試打電話2");
-        handle = new PhoneAccountHandle(new ComponentName(this, MyConnectionService.class), getApplicationName(this.getApplicationContext()));
-        tm = (TelecomManager) this.getSystemService(this.TELECOM_SERVICE);
-        tm.addNewIncomingCall(handle, callInfo);
+        if (android_voip) {
+            Bundle callInfo = new Bundle();
+            callInfo.putString("from", title);
+            handle = new PhoneAccountHandle(new ComponentName(this, MyConnectionService.class), getApplicationName(this.getApplicationContext()));
+            tm = (TelecomManager) this.getSystemService(this.TELECOM_SERVICE);
+            tm.addNewIncomingCall(handle, callInfo);
+        } else {
+            // Send to plugin
+            FirebasePlugin.sendMessage(bundle, this.getApplicationContext());
+        }
 
-        // Send to plugin
-        FirebasePlugin.sendMessage(bundle, this.getApplicationContext());
     }
 
     private void putKVInBundle(String k, String v, Bundle b){
