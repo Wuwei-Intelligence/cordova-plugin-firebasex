@@ -349,7 +349,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             notificationManager.notify(id.hashCode(), notification);
         }
 
-        if (android_voip) {
+        if (android_voip != null) {
             Bundle callInfo = new Bundle();
             callInfo.putString("from", title);
             handle = new PhoneAccountHandle(new ComponentName(this, MyConnectionService.class), getApplicationName(this.getApplicationContext()));
