@@ -441,6 +441,7 @@ public class FirebasePlugin extends CordovaPlugin {
         cordovaActivity = null;
         cordovaInterface = null;
         applicationContext = null;
+        this.onReset();
         super.onDestroy();
     }
 
