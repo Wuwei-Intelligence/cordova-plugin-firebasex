@@ -27,6 +27,8 @@ import java.util.Random;
 //
 import android.telecom.PhoneAccountHandle;
 import com.dmarc.cordovacall.MyConnectionService;
+import com.dmarc.cordovacall.CordovaCall;
+import android.telecom.Connection;
 import android.content.ComponentName;
 import android.telecom.TelecomManager;
 import android.content.pm.ApplicationInfo;
@@ -350,16 +352,28 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
         }
 
         if (android_voip != null) {
-            Bundle callInfo = new Bundle();
-            callInfo.putString("from", title);
-            handle = new PhoneAccountHandle(new ComponentName(this, MyConnectionService.class), getApplicationName(this.getApplicationContext()));
-            tm = (TelecomManager) this.getSystemService(this.TELECOM_SERVICE);
-            tm.addNewIncomingCall(handle, callInfo);
+            if (android_voip.equals("endCall")) {
+                this.connectionEndCall();
+            }
+            if (android_voip.equals("startCall")) {
+                Bundle callInfo = new Bundle();
+                callInfo.putString("from", title);
+                handle = new PhoneAccountHandle(new ComponentName(this, MyConnectionService.class), getApplicationName(this.getApplicationContext()));
+                tm = (TelecomManager) this.getSystemService(this.TELECOM_SERVICE);
+                tm.addNewIncomingCall(handle, callInfo);
+            }
         } else {
             // Send to plugin
             FirebasePlugin.sendMessage(bundle, this.getApplicationContext());
         }
 
+    }
+
+    private void connectionEndCall() {
+        Connection conn = MyConnectionService.getConnection();
+        if (conn != null) {
+            conn.onReject();
+        }
     }
 
     private void putKVInBundle(String k, String v, Bundle b){
