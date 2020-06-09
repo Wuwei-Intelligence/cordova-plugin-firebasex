@@ -110,6 +110,8 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             String visibility = null;
             String priority = null;
             String android_voip = null;
+            String android_voip_session_id = null;
+            String android_voip_token = null;
             boolean foregroundNotification = false;
 
             Map<String, String> data = remoteMessage.getData();
@@ -149,7 +151,9 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 if(data.containsKey("notification_android_icon")) icon = data.get("notification_android_icon");
                 if(data.containsKey("notification_android_visibility")) visibility = data.get("notification_android_visibility");
                 if(data.containsKey("notification_android_priority")) priority = data.get("notification_android_priority");
-                if(data.containsKey("notification_android_voip")) android_voip = data.get("notification_android_voip");
+                if(data.containsKey("notification_android_voip_action")) android_voip = data.get("notification_android_voip_action");
+                if(data.containsKey("notification_android_voip_session_id")) android_voip_session_id = data.get("notification_android_voip_session_id");
+                if(data.containsKey("notification_android_voip_token")) android_voip_token = data.get("notification_android_voip_token");
             }
 
             if (TextUtils.isEmpty(id)) {
@@ -175,14 +179,14 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             if (!TextUtils.isEmpty(body) || !TextUtils.isEmpty(title) || (data != null && !data.isEmpty())) {
                 boolean showNotification = (FirebasePlugin.inBackground() || !FirebasePlugin.hasNotificationsCallback() || foregroundNotification) && (!TextUtils.isEmpty(body) || !TextUtils.isEmpty(title));
                 showNotification = (android_voip != null) ? false : true;
-                sendMessage(remoteMessage, data, messageType, id, title, body, showNotification, sound, vibrate, light, color, icon, channelId, priority, visibility, android_voip);
+                sendMessage(remoteMessage, data, messageType, id, title, body, showNotification, sound, vibrate, light, color, icon, channelId, priority, visibility, android_voip, android_voip_session_id, android_voip_token);
             }
         }catch (Exception e){
             FirebasePlugin.handleExceptionWithoutContext(e);
         }
     }
 
-    private void sendMessage(RemoteMessage remoteMessage, Map<String, String> data, String messageType, String id, String title, String body, boolean showNotification, String sound, String vibrate, String light, String color, String icon, String channelId, String priority, String visibility, String android_voip) {
+    private void sendMessage(RemoteMessage remoteMessage, Map<String, String> data, String messageType, String id, String title, String body, boolean showNotification, String sound, String vibrate, String light, String color, String icon, String channelId, String priority, String visibility, String android_voip, String android_voip_session_id, String android_voip_token) {
         Log.d(TAG, "sendMessage(): messageType="+messageType+"; showNotification="+showNotification+"; id="+id+"; title="+title+"; body="+body+"; sound="+sound+"; vibrate="+vibrate+"; light="+light+"; color="+color+"; icon="+icon+"; channel="+channelId+"; data="+data.toString());
         Bundle bundle = new Bundle();
         for (String key : data.keySet()) {
@@ -358,6 +362,8 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             if (android_voip.equals("startCall")) {
                 Bundle callInfo = new Bundle();
                 callInfo.putString("from", title);
+                callInfo.putString("android_voip_session_id", android_voip_session_id);
+                callInfo.putString("android_voip_token", android_voip_token);
                 handle = new PhoneAccountHandle(new ComponentName(this, MyConnectionService.class), getApplicationName(this.getApplicationContext()));
                 tm = (TelecomManager) this.getSystemService(this.TELECOM_SERVICE);
                 tm.addNewIncomingCall(handle, callInfo);
