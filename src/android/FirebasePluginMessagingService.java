@@ -356,10 +356,10 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
         }
 
         if (android_voip != null) {
-            if (android_voip.equals("endCall")) {
+            if (android_voip.equals("CutOffCall")) {
                 this.connectionEndCall();
             }
-            if (android_voip.equals("startCall")) {
+            if (android_voip.equals("IncomingCall")) {
                 Bundle callInfo = new Bundle();
                 callInfo.putString("from", title);
                 callInfo.putString("android_voip_session_id", android_voip_session_id);
