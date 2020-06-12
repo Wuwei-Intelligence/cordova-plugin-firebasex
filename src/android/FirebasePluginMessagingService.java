@@ -112,6 +112,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             String android_voip = null;
             String android_voip_session_id = null;
             String android_voip_token = null;
+            String android_voip_reject_url = null;
             boolean foregroundNotification = false;
 
             Map<String, String> data = remoteMessage.getData();
@@ -154,6 +155,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 if(data.containsKey("notification_android_voip_action")) android_voip = data.get("notification_android_voip_action");
                 if(data.containsKey("notification_android_voip_session_id")) android_voip_session_id = data.get("notification_android_voip_session_id");
                 if(data.containsKey("notification_android_voip_token")) android_voip_token = data.get("notification_android_voip_token");
+                if(data.containsKey("notification_android_voip_reject_url")) android_voip_reject_url = data.get("notification_android_voip_reject_url");
             }
 
             if (TextUtils.isEmpty(id)) {
@@ -179,14 +181,14 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             if (!TextUtils.isEmpty(body) || !TextUtils.isEmpty(title) || (data != null && !data.isEmpty())) {
                 boolean showNotification = (FirebasePlugin.inBackground() || !FirebasePlugin.hasNotificationsCallback() || foregroundNotification) && (!TextUtils.isEmpty(body) || !TextUtils.isEmpty(title));
                 showNotification = (android_voip != null) ? false : true;
-                sendMessage(remoteMessage, data, messageType, id, title, body, showNotification, sound, vibrate, light, color, icon, channelId, priority, visibility, android_voip, android_voip_session_id, android_voip_token);
+                sendMessage(remoteMessage, data, messageType, id, title, body, showNotification, sound, vibrate, light, color, icon, channelId, priority, visibility, android_voip, android_voip_session_id, android_voip_token, android_voip_reject_url);
             }
         }catch (Exception e){
             FirebasePlugin.handleExceptionWithoutContext(e);
         }
     }
 
-    private void sendMessage(RemoteMessage remoteMessage, Map<String, String> data, String messageType, String id, String title, String body, boolean showNotification, String sound, String vibrate, String light, String color, String icon, String channelId, String priority, String visibility, String android_voip, String android_voip_session_id, String android_voip_token) {
+    private void sendMessage(RemoteMessage remoteMessage, Map<String, String> data, String messageType, String id, String title, String body, boolean showNotification, String sound, String vibrate, String light, String color, String icon, String channelId, String priority, String visibility, String android_voip, String android_voip_session_id, String android_voip_token, String android_voip_reject_url) {
         Log.d(TAG, "sendMessage(): messageType="+messageType+"; showNotification="+showNotification+"; id="+id+"; title="+title+"; body="+body+"; sound="+sound+"; vibrate="+vibrate+"; light="+light+"; color="+color+"; icon="+icon+"; channel="+channelId+"; data="+data.toString());
         Bundle bundle = new Bundle();
         for (String key : data.keySet()) {
@@ -368,6 +370,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 callInfo.putString("from", title);
                 callInfo.putString("android_voip_session_id", android_voip_session_id);
                 callInfo.putString("android_voip_token", android_voip_token);
+                callInfo.putString("android_voip_reject_url", android_voip_reject_url);
                 handle = new PhoneAccountHandle(new ComponentName(this, MyConnectionService.class), getApplicationName(this.getApplicationContext()));
                 tm = (TelecomManager) this.getSystemService(this.TELECOM_SERVICE);
                 tm.addNewIncomingCall(handle, callInfo);
