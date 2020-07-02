@@ -370,16 +370,18 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 FirebasePlugin.sendMessage(callInfo, this.getApplicationContext());
             }
             if (android_voip.equals("IncomingCall")) {
-                Bundle callInfo = new Bundle();
-                callInfo.putString("from", title);
-                callInfo.putString("android_voip_session_id", android_voip_session_id);
-                callInfo.putString("android_voip_token", android_voip_token);
-                callInfo.putString("android_voip_callback_pickup_url", android_voip_callback_pickup_url);
-                callInfo.putString("android_voip_callback_hangup_url", android_voip_callback_hangup_url);
-                callInfo.putString("android_voip_callback_reject_url", android_voip_callback_reject_url);
-                handle = new PhoneAccountHandle(new ComponentName(this, MyConnectionService.class), getApplicationName(this.getApplicationContext()));
-                tm = (TelecomManager) this.getSystemService(this.TELECOM_SERVICE);
-                tm.addNewIncomingCall(handle, callInfo);
+                if (!this.connectionExisted()) {
+                    Bundle callInfo = new Bundle();
+                    callInfo.putString("from", title);
+                    callInfo.putString("android_voip_session_id", android_voip_session_id);
+                    callInfo.putString("android_voip_token", android_voip_token);
+                    callInfo.putString("android_voip_callback_pickup_url", android_voip_callback_pickup_url);
+                    callInfo.putString("android_voip_callback_hangup_url", android_voip_callback_hangup_url);
+                    callInfo.putString("android_voip_callback_reject_url", android_voip_callback_reject_url);
+                    handle = new PhoneAccountHandle(new ComponentName(this, MyConnectionService.class), getApplicationName(this.getApplicationContext()));
+                    tm = (TelecomManager) this.getSystemService(this.TELECOM_SERVICE);
+                    tm.addNewIncomingCall(handle, callInfo);
+                }
             }
         } else {
             // Send to plugin
@@ -389,10 +391,24 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
     }
 
     private void connectionEndCall() {
-        Connection conn = MyConnectionService.getConnection();
+        Connection conn = this.getConnection();
         if (conn != null) {
             conn.onReject();
         }
+    }
+
+    private boolean connectionExisted() {
+        Connection conn = this.getConnection();
+        if (conn != null) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private Connection getConnection() {
+        Connection conn = MyConnectionService.getConnection();
+        return conn;
     }
 
     private void putKVInBundle(String k, String v, Bundle b){
