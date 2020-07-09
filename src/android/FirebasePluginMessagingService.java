@@ -393,7 +393,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
     private void connectionEndCall() {
         Connection conn = this.getConnection();
         if (conn != null) {
-            conn.onReject();
+            conn.onDisconnect();
         }
     }
 
