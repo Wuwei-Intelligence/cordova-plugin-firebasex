@@ -395,11 +395,14 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
         if (conn != null) {
             conn.onDisconnect();
         }
+        Boolean isSendCall = MyConnectionService.getIsSendCall();
+        if (isSendCall) MyConnectionService.setIsSendCall(false);
     }
 
     private boolean connectionExisted() {
         Connection conn = this.getConnection();
-        if (conn != null) {
+        Boolean isSendCall = MyConnectionService.getIsSendCall();
+        if (conn != null || isSendCall) {
             return true;
         } else {
             return false;
