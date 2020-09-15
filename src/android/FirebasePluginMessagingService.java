@@ -18,6 +18,7 @@ import android.content.ContentResolver;
 import android.graphics.Color;
 
 import com.crashlytics.android.Crashlytics;
+import com.google.firebase.Timestamp;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
@@ -115,6 +116,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             String android_voip_callback_pickup_url = null;
             String android_voip_callback_hangup_url = null;
             String android_voip_callback_reject_url = null;
+            Long android_voip_callback_timestamp = null;
             boolean foregroundNotification = false;
 
             Map<String, String> data = remoteMessage.getData();
@@ -160,6 +162,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 if(data.containsKey("notification_android_voip_callback_pickup_url")) android_voip_callback_pickup_url = data.get("notification_android_voip_callback_pickup_url");
                 if(data.containsKey("notification_android_voip_callback_hangup_url")) android_voip_callback_hangup_url = data.get("notification_android_voip_callback_hangup_url");
                 if(data.containsKey("notification_android_voip_callback_reject_url")) android_voip_callback_reject_url = data.get("notification_android_voip_callback_reject_url");
+                if(data.containsKey("timestamp")) android_voip_callback_timestamp = Long.parseLong(data.get("timestamp"));
             }
 
             if (TextUtils.isEmpty(id)) {
@@ -185,14 +188,14 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             if (!TextUtils.isEmpty(body) || !TextUtils.isEmpty(title) || (data != null && !data.isEmpty())) {
                 boolean showNotification = (FirebasePlugin.inBackground() || !FirebasePlugin.hasNotificationsCallback() || foregroundNotification) && (!TextUtils.isEmpty(body) || !TextUtils.isEmpty(title));
                 showNotification = (android_voip != null) ? false : true;
-                sendMessage(remoteMessage, data, messageType, id, title, body, showNotification, sound, vibrate, light, color, icon, channelId, priority, visibility, android_voip, android_voip_session_id, android_voip_token, android_voip_callback_pickup_url, android_voip_callback_hangup_url, android_voip_callback_reject_url);
+                sendMessage(remoteMessage, data, messageType, id, title, body, showNotification, sound, vibrate, light, color, icon, channelId, priority, visibility, android_voip, android_voip_session_id, android_voip_token, android_voip_callback_pickup_url, android_voip_callback_hangup_url, android_voip_callback_reject_url, android_voip_callback_timestamp);
             }
         }catch (Exception e){
             FirebasePlugin.handleExceptionWithoutContext(e);
         }
     }
 
-    private void sendMessage(RemoteMessage remoteMessage, Map<String, String> data, String messageType, String id, String title, String body, boolean showNotification, String sound, String vibrate, String light, String color, String icon, String channelId, String priority, String visibility, String android_voip, String android_voip_session_id, String android_voip_token, String android_voip_callback_pickup_url, String android_voip_callback_hangup_url, String android_voip_callback_reject_url) {
+    private void sendMessage(RemoteMessage remoteMessage, Map<String, String> data, String messageType, String id, String title, String body, boolean showNotification, String sound, String vibrate, String light, String color, String icon, String channelId, String priority, String visibility, String android_voip, String android_voip_session_id, String android_voip_token, String android_voip_callback_pickup_url, String android_voip_callback_hangup_url, String android_voip_callback_reject_url, Long android_voip_callback_timestamp) {
         Log.d(TAG, "sendMessage(): messageType="+messageType+"; showNotification="+showNotification+"; id="+id+"; title="+title+"; body="+body+"; sound="+sound+"; vibrate="+vibrate+"; light="+light+"; color="+color+"; icon="+icon+"; channel="+channelId+"; data="+data.toString());
         Bundle bundle = new Bundle();
         for (String key : data.keySet()) {
@@ -370,17 +373,24 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 FirebasePlugin.sendMessage(callInfo, this.getApplicationContext());
             }
             if (android_voip.equals("IncomingCall")) {
-                if (!this.connectionExisted()) {
-                    Bundle callInfo = new Bundle();
-                    callInfo.putString("from", title);
-                    callInfo.putString("android_voip_session_id", android_voip_session_id);
-                    callInfo.putString("android_voip_token", android_voip_token);
-                    callInfo.putString("android_voip_callback_pickup_url", android_voip_callback_pickup_url);
-                    callInfo.putString("android_voip_callback_hangup_url", android_voip_callback_hangup_url);
-                    callInfo.putString("android_voip_callback_reject_url", android_voip_callback_reject_url);
-                    handle = new PhoneAccountHandle(new ComponentName(this, MyConnectionService.class), getApplicationName(this.getApplicationContext()));
-                    tm = (TelecomManager) this.getSystemService(this.TELECOM_SERVICE);
-                    tm.addNewIncomingCall(handle, callInfo);
+                // android_voip_callback_timestamp
+                Timestamp timestamp = Timestamp.now();
+                // Convert timestamp to long for use
+                long timeParameterNow = timestamp.getSeconds();
+                android_voip_callback_timestamp = android_voip_callback_timestamp + 30;
+                if (!(timeParameterNow > android_voip_callback_timestamp)) {
+                    if (!this.connectionExisted()) {
+                        Bundle callInfo = new Bundle();
+                        callInfo.putString("from", title);
+                        callInfo.putString("android_voip_session_id", android_voip_session_id);
+                        callInfo.putString("android_voip_token", android_voip_token);
+                        callInfo.putString("android_voip_callback_pickup_url", android_voip_callback_pickup_url);
+                        callInfo.putString("android_voip_callback_hangup_url", android_voip_callback_hangup_url);
+                        callInfo.putString("android_voip_callback_reject_url", android_voip_callback_reject_url);
+                        handle = new PhoneAccountHandle(new ComponentName(this, MyConnectionService.class), getApplicationName(this.getApplicationContext()));
+                        tm = (TelecomManager) this.getSystemService(this.TELECOM_SERVICE);
+                        tm.addNewIncomingCall(handle, callInfo);
+                    }
                 }
             }
         } else {
