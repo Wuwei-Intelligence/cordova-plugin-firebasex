@@ -24,7 +24,7 @@ import java.util.Random;
 
 //
 import android.content.pm.ApplicationInfo;
-
+import com.dmarc.cordovacall.CordovaCall;
 import city.waffle.manager.dev.R;
 
 public class FirebasePluginMessagingService extends FirebaseMessagingService {
@@ -529,9 +529,11 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 Notification notification = notificationBuilder.build();
 
                 // Display notification
-                NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-                Log.d(TAG, "show notification: "+notification.toString());
-                notificationManager.notify(id.hashCode(), notification);
+                if (!CordovaCall.getIsSendCall()) {
+                    NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                    Log.d(TAG, "show notification: "+notification.toString());
+                    notificationManager.notify(id.hashCode(), notification);
+                }
             }
         }
     }
