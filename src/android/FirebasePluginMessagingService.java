@@ -192,7 +192,6 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
 
             if (!TextUtils.isEmpty(body) || !TextUtils.isEmpty(title) || (data != null && !data.isEmpty())) {
                 boolean showNotification = (FirebasePlugin.inBackground() || !FirebasePlugin.hasNotificationsCallback() || foregroundNotification) && (!TextUtils.isEmpty(body) || !TextUtils.isEmpty(title));
-                showNotification = (android_voip != null) ? false : true;
                 sendMessage(remoteMessage, data, messageType, id, title, body, showNotification, sound, vibrate, light, color, icon, channelId, priority, visibility, android_voip, android_voip_session_id, android_voip_token, android_voip_callback_pickup_url, android_voip_callback_hangup_url, android_voip_callback_reject_url, android_voip_callback_timestamp);
             }
         }catch (Exception e){
@@ -368,7 +367,8 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             Log.d(TAG, "show notification: "+notification.toString());
             notificationManager.notify(id.hashCode(), notification);
         } else {
-            int int_id_hashCode = id.hashCode();
+            if (android_voip != null) {
+                int int_id_hashCode = id.hashCode();
 
             // fullScreenPendingIntent
 //            Intent fullScreenIntent = new Intent(this, FullscreenActivity.class);
@@ -545,8 +545,8 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             Log.d(TAG, "show notification: "+notification.toString());
             notificationManager.notify(id.hashCode(), notification);
+            }
         }
-
     }
 
     private void connectionEndCall() {
