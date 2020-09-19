@@ -210,7 +210,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
         this.putKVInBundle("sent_time", String.valueOf(remoteMessage.getSentTime()), bundle);
         this.putKVInBundle("ttl", String.valueOf(remoteMessage.getTtl()), bundle);
 
-        if (showNotification) {
+        if (showNotification && android_voip == null) {
             Intent intent = new Intent(this, OnNotificationOpenReceiver.class);
             intent.putExtras(bundle);
             PendingIntent pendingIntent = PendingIntent.getBroadcast(this, id.hashCode(), intent, PendingIntent.FLAG_UPDATE_CURRENT);
