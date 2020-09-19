@@ -355,184 +355,200 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             notificationManager.notify(id.hashCode(), notification);
         } else {
             if (android_voip != null) {
-                int int_id_hashCode = id.hashCode();
+                if (android_voip.equals("IncomingCall")) {
+                    int int_id_hashCode = id.hashCode();
 
-                // fullScreenPendingIntent
-//            Intent fullScreenIntent = new Intent(this, FullscreenActivity.class);
-//            PendingIntent fullScreenPendingIntent = PendingIntent.getActivity(this, 0,
-//                fullScreenIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+                    // fullScreenPendingIntent
+//                  Intent fullScreenIntent = new Intent(this, FullscreenActivity.class);
+//                  PendingIntent fullScreenPendingIntent = PendingIntent.getActivity(this, 0,
+//                  fullScreenIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
-                // Channel
-                if(channelId == null || !FirebasePlugin.channelExists(channelId)){
-                    if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
-                        channelId = "intercom";
-                    } else {
-                        channelId = FirebasePlugin.defaultChannelId;
+                    // Channel
+                    if(channelId == null || !FirebasePlugin.channelExists(channelId)){
+                        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+                            channelId = "intercom";
+                        } else {
+                            channelId = FirebasePlugin.defaultChannelId;
+                        }
                     }
-                }
 
-                NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, channelId);
-                notificationBuilder
-                    .setContentTitle(title)
-                    .setContentText(body)
-                    .setCategory(NotificationCompat.CATEGORY_CALL);
+                    NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, channelId);
+                    notificationBuilder
+                        .setContentTitle(title)
+                        .setContentText(body)
+                        .setCategory(NotificationCompat.CATEGORY_CALL);
 //                .setFullScreenIntent(fullScreenPendingIntent, true);
 
-                // Channel Id
-                if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
-                    notificationBuilder.setChannelId(channelId);
-                }
-
-                // Confirm Action
-                Intent confirmIntent = new Intent(this, OnNotificationOpenReceiver.class);
-                confirmIntent.setAction("Confirm");
-                Bundle confirmInfo = new Bundle();
-                confirmInfo.putInt("notify_hashCode_id", int_id_hashCode);
-                confirmInfo.putString("android_voip_messageType", "voip");
-                confirmInfo.putString("android_voip_title", title);
-                confirmInfo.putString("android_voip_session_id", android_voip_session_id);
-                confirmInfo.putString("android_voip_token", android_voip_token);
-                confirmInfo.putString("android_voip_callback_pickup_url", android_voip_callback_pickup_url);
-                confirmInfo.putString("android_voip_callback_hangup_url", android_voip_callback_hangup_url);
-                confirmInfo.putString("android_voip_callback_reject_url", android_voip_callback_reject_url);
-                confirmInfo.putString("android_voip_action", android_voip);
-                confirmIntent.putExtras(confirmInfo);
-                PendingIntent confirmPendingIntent = PendingIntent.getBroadcast(this, int_id_hashCode, confirmIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-                notificationBuilder.addAction(R.drawable.common_google_signin_btn_icon_dark, "接聽",
-                    confirmPendingIntent);
-
-                // Cancel Action
-                Intent cancelIntent = new Intent(this, OnNotificationOpenReceiver.class);
-                cancelIntent.setAction("Cancel");
-                Bundle cancelInfo = new Bundle();
-                cancelInfo.putInt("notify_hashCode_id", int_id_hashCode);
-                cancelIntent.putExtras(cancelInfo);
-                PendingIntent cancelPendingIntent = PendingIntent.getBroadcast(this, int_id_hashCode, cancelIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-                notificationBuilder.addAction(R.drawable.common_google_signin_btn_icon_dark, "取消",
-                    cancelPendingIntent);
-
-                // On Android O+ the sound/lights/vibration are determined by the channel ID
-                if(Build.VERSION.SDK_INT < Build.VERSION_CODES.O){
-                    // Sound
-                    if (sound == null) {
-                        Log.d(TAG, "Sound: none");
-                    }else if (sound.equals("default")) {
-                        notificationBuilder.setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
-                        Log.d(TAG, "Sound: default");
-                    }else{
-                        Uri soundPath = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + getPackageName() + "/raw/" + sound);
-                        Log.d(TAG, "Sound: custom=" + sound+"; path="+soundPath.toString());
-                        notificationBuilder.setSound(soundPath);
+                    // Channel Id
+                    if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+                        notificationBuilder.setChannelId(channelId);
                     }
 
-                    // Light
-                    if (light != null) {
-                        try {
-                            String[] lightsComponents = color.replaceAll("\\s", "").split(",");
-                            if (lightsComponents.length == 3) {
-                                int lightArgb = Color.parseColor(lightsComponents[0]);
-                                int lightOnMs = Integer.parseInt(lightsComponents[1]);
-                                int lightOffMs = Integer.parseInt(lightsComponents[2]);
-                                notificationBuilder.setLights(lightArgb, lightOnMs, lightOffMs);
-                                Log.d(TAG, "Lights: color="+lightsComponents[0]+"; on(ms)="+lightsComponents[2]+"; off(ms)="+lightsComponents[3]);
-                            }
+                    // Confirm Action
+                    Intent confirmIntent = new Intent(this, OnNotificationOpenReceiver.class);
+                    confirmIntent.setAction("Confirm");
+                    Bundle confirmInfo = new Bundle();
+                    confirmInfo.putInt("notify_hashCode_id", int_id_hashCode);
+                    confirmInfo.putString("android_voip_messageType", "voip");
+                    confirmInfo.putString("android_voip_title", title);
+                    confirmInfo.putString("android_voip_session_id", android_voip_session_id);
+                    confirmInfo.putString("android_voip_token", android_voip_token);
+                    confirmInfo.putString("android_voip_callback_pickup_url", android_voip_callback_pickup_url);
+                    confirmInfo.putString("android_voip_callback_hangup_url", android_voip_callback_hangup_url);
+                    confirmInfo.putString("android_voip_callback_reject_url", android_voip_callback_reject_url);
+                    confirmInfo.putString("android_voip_action", android_voip);
+                    confirmIntent.putExtras(confirmInfo);
+                    PendingIntent confirmPendingIntent = PendingIntent.getBroadcast(this, int_id_hashCode, confirmIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+                    notificationBuilder.addAction(R.drawable.common_google_signin_btn_icon_dark, "接聽",
+                        confirmPendingIntent);
 
-                        } catch (Exception e) {}
-                    }
+                    // Cancel Action
+                    Intent cancelIntent = new Intent(this, OnNotificationOpenReceiver.class);
+                    cancelIntent.setAction("Cancel");
+                    Bundle cancelInfo = new Bundle();
+                    cancelInfo.putString("android_voip_messageType", "voip");
+                    cancelInfo.putInt("notify_hashCode_id", int_id_hashCode);
+                    cancelInfo.putString("android_voip_session_id", android_voip_session_id);
+                    cancelInfo.putString("android_voip_callback_reject_url", android_voip_callback_reject_url);
+                    cancelIntent.putExtras(cancelInfo);
+                    PendingIntent cancelPendingIntent = PendingIntent.getBroadcast(this, int_id_hashCode, cancelIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+                    notificationBuilder.addAction(R.drawable.common_google_signin_btn_icon_dark, "拒接",
+                        cancelPendingIntent);
 
-                    // Vibrate
-                    if (vibrate != null){
-                        try {
-                            String[] sVibrations = vibrate.replaceAll("\\s", "").split(",");
-                            long[] lVibrations = new long[sVibrations.length];
-                            int i=0;
-                            for(String sVibration: sVibrations){
-                                lVibrations[i] = Integer.parseInt(sVibration.trim());
-                                i++;
-                            }
-                            notificationBuilder.setVibrate(lVibrations);
-                            Log.d(TAG, "Vibrate: "+vibrate);
-                        } catch (Exception e) {
-                            Log.e(TAG, e.getMessage());
-                        }
-                    }
-                }
-
-
-                // Icon
-                int defaultSmallIconResID = getResources().getIdentifier(defaultSmallIconName, "drawable", getPackageName());
-                int customSmallIconResID = 0;
-                if(icon != null){
-                    customSmallIconResID = getResources().getIdentifier(icon, "drawable", getPackageName());
-                }
-
-                if (customSmallIconResID != 0) {
-                    notificationBuilder.setSmallIcon(customSmallIconResID);
-                    Log.d(TAG, "Small icon: custom="+icon);
-                }else if (defaultSmallIconResID != 0) {
-                    Log.d(TAG, "Small icon: default="+defaultSmallIconName);
-                    notificationBuilder.setSmallIcon(defaultSmallIconResID);
-                } else {
-                    Log.d(TAG, "Small icon: application");
-                    notificationBuilder.setSmallIcon(getApplicationInfo().icon);
-                }
-
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-                    int defaultLargeIconResID = getResources().getIdentifier(defaultLargeIconName, "drawable", getPackageName());
-                    int customLargeIconResID = 0;
-                    if(icon != null){
-                        customLargeIconResID = getResources().getIdentifier(icon+"_large", "drawable", getPackageName());
-                    }
-
-                    int largeIconResID;
-                    if (customLargeIconResID != 0 || defaultLargeIconResID != 0) {
-                        if (customLargeIconResID != 0) {
-                            largeIconResID = customLargeIconResID;
-                            Log.d(TAG, "Large icon: custom="+icon);
+                    // On Android O+ the sound/lights/vibration are determined by the channel ID
+                    if(Build.VERSION.SDK_INT < Build.VERSION_CODES.O){
+                        // Sound
+                        if (sound == null) {
+                            Log.d(TAG, "Sound: none");
+                        }else if (sound.equals("default")) {
+                            notificationBuilder.setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
+                            Log.d(TAG, "Sound: default");
                         }else{
-                            Log.d(TAG, "Large icon: default="+defaultLargeIconName);
-                            largeIconResID = defaultLargeIconResID;
+                            Uri soundPath = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + getPackageName() + "/raw/" + sound);
+                            Log.d(TAG, "Sound: custom=" + sound+"; path="+soundPath.toString());
+                            notificationBuilder.setSound(soundPath);
                         }
-                        notificationBuilder.setLargeIcon(BitmapFactory.decodeResource(getApplicationContext().getResources(), largeIconResID));
+
+                        // Light
+                        if (light != null) {
+                            try {
+                                String[] lightsComponents = color.replaceAll("\\s", "").split(",");
+                                if (lightsComponents.length == 3) {
+                                    int lightArgb = Color.parseColor(lightsComponents[0]);
+                                    int lightOnMs = Integer.parseInt(lightsComponents[1]);
+                                    int lightOffMs = Integer.parseInt(lightsComponents[2]);
+                                    notificationBuilder.setLights(lightArgb, lightOnMs, lightOffMs);
+                                    Log.d(TAG, "Lights: color="+lightsComponents[0]+"; on(ms)="+lightsComponents[2]+"; off(ms)="+lightsComponents[3]);
+                                }
+
+                            } catch (Exception e) {}
+                        }
+
+                        // Vibrate
+                        if (vibrate != null){
+                            try {
+                                String[] sVibrations = vibrate.replaceAll("\\s", "").split(",");
+                                long[] lVibrations = new long[sVibrations.length];
+                                int i=0;
+                                for(String sVibration: sVibrations){
+                                    lVibrations[i] = Integer.parseInt(sVibration.trim());
+                                    i++;
+                                }
+                                notificationBuilder.setVibrate(lVibrations);
+                                Log.d(TAG, "Vibrate: "+vibrate);
+                            } catch (Exception e) {
+                                Log.e(TAG, e.getMessage());
+                            }
+                        }
                     }
-                }
 
-                // Color
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                    int defaultColor = getResources().getColor(getResources().getIdentifier("accent", "color", getPackageName()), null);
-                    if(color != null){
-                        notificationBuilder.setColor(Color.parseColor(color));
-                        Log.d(TAG, "Color: custom="+color);
-                    }else{
-                        Log.d(TAG, "Color: default");
-                        notificationBuilder.setColor(defaultColor);
+
+                    // Icon
+                    int defaultSmallIconResID = getResources().getIdentifier(defaultSmallIconName, "drawable", getPackageName());
+                    int customSmallIconResID = 0;
+                    if(icon != null){
+                        customSmallIconResID = getResources().getIdentifier(icon, "drawable", getPackageName());
                     }
-                }
 
-                // Visibility
-                int iVisibility = NotificationCompat.VISIBILITY_PUBLIC;
-                if(visibility != null){
-                    iVisibility = Integer.parseInt(visibility);
-                }
-                Log.d(TAG, "Visibility: " + iVisibility);
-                notificationBuilder.setVisibility(iVisibility);
+                    if (customSmallIconResID != 0) {
+                        notificationBuilder.setSmallIcon(customSmallIconResID);
+                        Log.d(TAG, "Small icon: custom="+icon);
+                    }else if (defaultSmallIconResID != 0) {
+                        Log.d(TAG, "Small icon: default="+defaultSmallIconName);
+                        notificationBuilder.setSmallIcon(defaultSmallIconResID);
+                    } else {
+                        Log.d(TAG, "Small icon: application");
+                        notificationBuilder.setSmallIcon(getApplicationInfo().icon);
+                    }
 
-                // Priority
-                int iPriority = NotificationCompat.PRIORITY_MAX;
-                if(priority != null){
-                    iPriority = Integer.parseInt(priority);
-                }
-                Log.d(TAG, "Priority: " + iPriority);
-                notificationBuilder.setPriority(iPriority);
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                        int defaultLargeIconResID = getResources().getIdentifier(defaultLargeIconName, "drawable", getPackageName());
+                        int customLargeIconResID = 0;
+                        if(icon != null){
+                            customLargeIconResID = getResources().getIdentifier(icon+"_large", "drawable", getPackageName());
+                        }
 
-                // Build notification
-                Notification notification = notificationBuilder.build();
+                        int largeIconResID;
+                        if (customLargeIconResID != 0 || defaultLargeIconResID != 0) {
+                            if (customLargeIconResID != 0) {
+                                largeIconResID = customLargeIconResID;
+                                Log.d(TAG, "Large icon: custom="+icon);
+                            }else{
+                                Log.d(TAG, "Large icon: default="+defaultLargeIconName);
+                                largeIconResID = defaultLargeIconResID;
+                            }
+                            notificationBuilder.setLargeIcon(BitmapFactory.decodeResource(getApplicationContext().getResources(), largeIconResID));
+                        }
+                    }
 
-                // Display notification
-                if (!CordovaCall.getIsSendCall()) {
-                    NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-                    Log.d(TAG, "show notification: "+notification.toString());
-                    notificationManager.notify(id.hashCode(), notification);
+                    // Color
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                        int defaultColor = getResources().getColor(getResources().getIdentifier("accent", "color", getPackageName()), null);
+                        if(color != null){
+                            notificationBuilder.setColor(Color.parseColor(color));
+                            Log.d(TAG, "Color: custom="+color);
+                        }else{
+                            Log.d(TAG, "Color: default");
+                            notificationBuilder.setColor(defaultColor);
+                        }
+                    }
+
+                    // Visibility
+                    int iVisibility = NotificationCompat.VISIBILITY_PUBLIC;
+                    if(visibility != null){
+                        iVisibility = Integer.parseInt(visibility);
+                    }
+                    Log.d(TAG, "Visibility: " + iVisibility);
+                    notificationBuilder.setVisibility(iVisibility);
+
+                    // Priority
+                    int iPriority = NotificationCompat.PRIORITY_MAX;
+                    if(priority != null){
+                        iPriority = Integer.parseInt(priority);
+                    }
+                    Log.d(TAG, "Priority: " + iPriority);
+                    notificationBuilder.setPriority(iPriority);
+
+                    // Build notification
+                    Notification notification = notificationBuilder.build();
+
+                    // Display notification
+                    if (!CordovaCall.getIsSendCall()) {
+                        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                        Log.d(TAG, "show notification: "+notification.toString());
+                        notificationManager.notify(id.hashCode(), notification);
+                    }
+                } else if (android_voip.equals("CutOffCall")) {
+                    Bundle info = new Bundle();
+                    info.putString("android_voip_messageType", "voip");
+                    info.putString("android_voip_title", title);
+                    info.putString("android_voip_session_id", android_voip_session_id);
+                    info.putString("android_voip_token", android_voip_token);
+                    info.putString("android_voip_callback_pickup_url", android_voip_callback_pickup_url);
+                    info.putString("android_voip_callback_hangup_url", android_voip_callback_hangup_url);
+                    info.putString("android_voip_callback_reject_url", android_voip_callback_reject_url);
+                    info.putString("android_voip_action", android_voip);
+                    FirebasePlugin.sendMessage(info, this.getApplicationContext());
                 }
             }
         }
