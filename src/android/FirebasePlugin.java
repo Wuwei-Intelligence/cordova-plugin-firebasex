@@ -105,7 +105,7 @@ public class FirebasePlugin extends CordovaPlugin {
     private boolean authStateChangeListenerInitialized = false;
     private static CordovaInterface cordovaInterface = null;
     protected static Context applicationContext = null;
-    public static Activity cordovaActivity = null;
+    private static Activity cordovaActivity = null;
     private boolean isCrashlyticsEnabled = false;
 
     protected static final String TAG = "FirebasePlugin";

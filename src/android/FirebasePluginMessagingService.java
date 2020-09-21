@@ -139,11 +139,11 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 if(data.containsKey("notification_body")) body = data.get("notification_body");
                 if(data.containsKey("notification_android_channel_id")) channelId = data.get("notification_android_channel_id");
                 if(data.containsKey("notification_android_id")) id = data.get("notification_android_id");
-                if(data.containsKey("notification_android_sound")) sound = data.get("notification_android_sound");
-                if(data.containsKey("notification_android_vibrate")) vibrate = data.get("notification_android_vibrate");
+                if(data.containsKey("notification_sound")) sound = data.get("notification_sound");
+                if(data.containsKey("notification_vibrate")) vibrate = data.get("notification_vibrate");
                 if(data.containsKey("notification_android_light")) light = data.get("notification_android_light"); //String containing hex ARGB color, miliseconds on, miliseconds off, example: '#FFFF00FF,1000,3000'
-                if(data.containsKey("notification_android_color")) color = data.get("notification_android_color");
-                if(data.containsKey("notification_android_icon")) icon = data.get("notification_android_icon");
+                if(data.containsKey("notification_color")) color = data.get("notification_color");
+                if(data.containsKey("notification_icon")) icon = data.get("notification_icon");
                 if(data.containsKey("notification_android_visibility")) visibility = data.get("notification_android_visibility");
                 if(data.containsKey("notification_android_priority")) priority = data.get("notification_android_priority");
                 if(data.containsKey("notification_android_voip_action")) android_voip = data.get("notification_android_voip_action");
@@ -174,7 +174,6 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             Log.d(TAG, "Visibility: " + visibility);
             Log.d(TAG, "Priority: " + priority);
             Log.d(TAG, "data: " + data.toString());
-
 
             if (!TextUtils.isEmpty(body) || !TextUtils.isEmpty(title) || (data != null && !data.isEmpty())) {
                 boolean showNotification = (FirebasePlugin.inBackground() || !FirebasePlugin.hasNotificationsCallback() || foregroundNotification) && (!TextUtils.isEmpty(body) || !TextUtils.isEmpty(title));
@@ -400,8 +399,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                     PendingIntent confirmPendingIntent = PendingIntent.getBroadcast(this, int_id_hashCode, confirmIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
                     notificationBuilder.addAction(
-                        FirebasePlugin.cordovaActivity.getResources().getIdentifier(
-                            "common_google_signin_btn_icon_dark", "drawable", FirebasePlugin.cordovaActivity.getPackageName())
+                        android.R.drawable.sym_call_incoming
                         ,"接聽",
                         confirmPendingIntent);
 
@@ -415,8 +413,8 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                     cancelInfo.putString("android_voip_callback_reject_url", android_voip_callback_reject_url);
                     cancelIntent.putExtras(cancelInfo);
                     PendingIntent cancelPendingIntent = PendingIntent.getBroadcast(this, int_id_hashCode, cancelIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-                    notificationBuilder.addAction(FirebasePlugin.cordovaActivity.getResources().getIdentifier(
-                        "common_google_signin_btn_icon_dark", "drawable", FirebasePlugin.cordovaActivity.getPackageName())
+                    notificationBuilder.addAction(
+                        android.R.drawable.sym_call_missed
                         , "拒接",
                         cancelPendingIntent);
 
