@@ -105,7 +105,7 @@ public class FirebasePlugin extends CordovaPlugin {
     private boolean authStateChangeListenerInitialized = false;
     private static CordovaInterface cordovaInterface = null;
     protected static Context applicationContext = null;
-    private static Activity cordovaActivity = null;
+    public static Activity cordovaActivity = null;
     private boolean isCrashlyticsEnabled = false;
 
     protected static final String TAG = "FirebasePlugin";
@@ -2260,7 +2260,7 @@ public class FirebasePlugin extends CordovaPlugin {
                     for(int i = 0; i < filters.length(); i++) {
                         JSONArray filter = filters.getJSONArray(i);
                         switch(filter.getString(0)) {
-                            case "where": 
+                            case "where":
                                 if (Objects.equals(filter.getString(2), new String("=="))) {
                                     query = query.whereEqualTo(filter.getString(1), filter.getString(3));
                                 }
@@ -2280,7 +2280,7 @@ public class FirebasePlugin extends CordovaPlugin {
                                     query = query.whereArrayContains(filter.getString(1), filter.getString(3));
                                 }
                                 break;
-                            case "orderBy": 
+                            case "orderBy":
                                 Direction direction = Direction.ASCENDING;
                                 if (Objects.equals(filter.getString(2), new String("desc"))) {
                                     direction = Direction.DESCENDING;
@@ -2298,7 +2298,7 @@ public class FirebasePlugin extends CordovaPlugin {
                                 break;
                         }
                     }
-                    
+
                     query.get()
                             .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
                                 @Override

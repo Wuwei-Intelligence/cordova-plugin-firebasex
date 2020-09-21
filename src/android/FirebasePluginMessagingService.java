@@ -25,7 +25,6 @@ import java.util.Random;
 //
 import android.content.pm.ApplicationInfo;
 import com.dmarc.cordovacall.CordovaCall;
-import city.waffle.manager.dev.R;
 
 public class FirebasePluginMessagingService extends FirebaseMessagingService {
 
@@ -399,7 +398,11 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                     confirmInfo.putString("android_voip_action", android_voip);
                     confirmIntent.putExtras(confirmInfo);
                     PendingIntent confirmPendingIntent = PendingIntent.getBroadcast(this, int_id_hashCode, confirmIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-                    notificationBuilder.addAction(R.drawable.common_google_signin_btn_icon_dark, "接聽",
+
+                    notificationBuilder.addAction(
+                        FirebasePlugin.cordovaActivity.getResources().getIdentifier(
+                            "common_google_signin_btn_icon_dark", "drawable", FirebasePlugin.cordovaActivity.getPackageName())
+                        ,"接聽",
                         confirmPendingIntent);
 
                     // Cancel Action
@@ -412,7 +415,9 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                     cancelInfo.putString("android_voip_callback_reject_url", android_voip_callback_reject_url);
                     cancelIntent.putExtras(cancelInfo);
                     PendingIntent cancelPendingIntent = PendingIntent.getBroadcast(this, int_id_hashCode, cancelIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-                    notificationBuilder.addAction(R.drawable.common_google_signin_btn_icon_dark, "拒接",
+                    notificationBuilder.addAction(FirebasePlugin.cordovaActivity.getResources().getIdentifier(
+                        "common_google_signin_btn_icon_dark", "drawable", FirebasePlugin.cordovaActivity.getPackageName())
+                        , "拒接",
                         cancelPendingIntent);
 
                     // On Android O+ the sound/lights/vibration are determined by the channel ID
