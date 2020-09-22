@@ -353,6 +353,15 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             notificationManager.notify(id.hashCode(), notification);
         } else {
             if (android_voip != null) {
+                // android_voip_callback_timestamp
+                Timestamp timestamp = Timestamp.now();
+                // Convert timestamp to long for use
+                long timeParameterNow = timestamp.getSeconds();
+                android_voip_callback_timestamp = android_voip_callback_timestamp + 30;
+                if ((timeParameterNow > android_voip_callback_timestamp)) {
+                    return;
+                }
+                //
                 if (android_voip.equals("IncomingCall")) {
                     int int_id_hashCode = id.hashCode();
 
