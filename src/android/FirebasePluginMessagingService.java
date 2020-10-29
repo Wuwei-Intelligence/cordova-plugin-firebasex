@@ -553,14 +553,14 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                     }
                 } else if (android_voip.equals("CutOffCall")) {
                     Bundle info = new Bundle();
-                    info.putString("android_voip_messageType", "voip");
-                    info.putString("android_voip_title", title);
-                    info.putString("android_voip_session_id", android_voip_session_id);
-                    info.putString("android_voip_token", android_voip_token);
-                    info.putString("android_voip_callback_pickup_url", android_voip_callback_pickup_url);
-                    info.putString("android_voip_callback_hangup_url", android_voip_callback_hangup_url);
-                    info.putString("android_voip_callback_reject_url", android_voip_callback_reject_url);
-                    info.putString("android_voip_action", android_voip);
+                    info.putString("messageType", "voip");
+                    info.putString("title", title);
+                    info.putString("session_id", android_voip_session_id);
+                    info.putString("token", android_voip_token);
+                    info.putString("callback_pickup_url", android_voip_callback_pickup_url);
+                    info.putString("callback_hangup_url", android_voip_callback_hangup_url);
+                    info.putString("callback_reject_url", android_voip_callback_reject_url);
+                    info.putString("action", android_voip);
                     FirebasePlugin.sendMessage(info, this.getApplicationContext());
                 }
             }
