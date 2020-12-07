@@ -544,6 +544,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
 
                     // Build notification
                     Notification notification = notificationBuilder.build();
+                    notification.flags |= Notification.FLAG_INSISTENT;
 
                     // Display notification
                     if (!CordovaCall.getIsSendCall()) {
