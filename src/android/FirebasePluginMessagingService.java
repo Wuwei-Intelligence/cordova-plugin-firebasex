@@ -33,6 +33,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
 
     static final String defaultSmallIconName = "notification_icon";
     static final String defaultLargeIconName = "notification_icon_large";
+    static final Integer CallId = 99;
 
     /**
      * Called if InstanceID token is updated. This may occur if the security of
@@ -550,9 +551,11 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                     if (!CordovaCall.getIsSendCall()) {
                         NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
                         Log.d(TAG, "show notification: "+notification.toString());
-                        notificationManager.notify(id.hashCode(), notification);
+                        notificationManager.notify("WaffleIntercomIncommingCall",CallId, notification);
                     }
                 } else if (android_voip.equals("CutOffCall")) {
+                    NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                    notificationManager.cancel("WaffleIntercomIncommingCall", CallId);
                     Bundle info = new Bundle();
                     info.putString("messageType", "voip");
                     info.putString("title", title);
