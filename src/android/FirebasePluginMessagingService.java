@@ -397,7 +397,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                     Intent confirmIntent = new Intent(this, OnNotificationOpenReceiver.class);
                     confirmIntent.setAction("Confirm");
                     Bundle confirmInfo = new Bundle();
-                    confirmInfo.putInt("notify_hashCode_id", int_id_hashCode);
+                    confirmInfo.putInt("notify_hashCode_id", CallId);
                     confirmInfo.putString("android_voip_messageType", "voip");
                     confirmInfo.putString("android_voip_title", title);
                     confirmInfo.putString("android_voip_session_id", android_voip_session_id);
@@ -419,7 +419,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                     cancelIntent.setAction("Cancel");
                     Bundle cancelInfo = new Bundle();
                     cancelInfo.putString("android_voip_messageType", "voip");
-                    cancelInfo.putInt("notify_hashCode_id", int_id_hashCode);
+                    cancelInfo.putInt("notify_hashCode_id", CallId);
                     cancelInfo.putString("android_voip_session_id", android_voip_session_id);
                     cancelInfo.putString("android_voip_callback_reject_url", android_voip_callback_reject_url);
                     cancelIntent.putExtras(cancelInfo);

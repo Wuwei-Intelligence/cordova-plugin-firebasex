@@ -53,7 +53,7 @@ public class OnNotificationOpenReceiver extends BroadcastReceiver {
                 }
 
                 NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-                notificationManager.cancel(data.getInt("notify_hashCode_id"));
+                notificationManager.cancel("WaffleIntercomIncommingCall", data.getInt("notify_hashCode_id"));
             }
         }catch (Exception e){
             FirebasePlugin.handleExceptionWithoutContext(e);
