@@ -25,23 +25,27 @@ repositories {
 cdvPluginPostBuildExtras.add({
     rootProject.subprojects {
         if (name == "app") {
-            // if (!plugins.hasPlugin('com.google.gms.google-services')) {
-            //     apply {
-            //         plugin com.google.gms.googleservices.GoogleServicesPlugin
-            //     }
+            if (!plugins.hasPlugin('com.google.gms.google-services')) {
+                apply {
+                    plugin com.google.gms.googleservices.GoogleServicesPlugin
+                }
 
-            //     // Disable strict version check as it causes problems
-            //     com.google.gms.googleservices.GoogleServicesPlugin.config.disableVersionCheck = true
-            // }
+                apply {
+                    plugin: 'com.google.firebase.crashlytics'
+                }
+
+                // Disable strict version check as it causes problems
+                com.google.gms.googleservices.GoogleServicesPlugin.config.disableVersionCheck = true
+            }
         }
     }
     // Use class instead of id (string) to be able to apply plugin from non-root gradle file
 
     apply plugin: com.crashlytics.tools.gradle.CrashlyticsPlugin
 
-    apply plugin: com.google.gms.google-services
+    // apply plugin: com.google.gms.google-services
 
-    apply plugin: com.google.firebase.crashlytics
+    // apply plugin: com.google.firebase.crashlytics
 
     // Enable Crashlytics NDK reporting
     crashlytics {
