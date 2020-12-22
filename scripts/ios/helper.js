@@ -34,7 +34,7 @@ module.exports = {
         xcodeProject.parseSync();
 
         // Build the body of the script to be executed during the build phase.
-        var script = '"' + '\\"${PODS_ROOT}/Fabric/run\\"' + '"';
+        var script = '"' + '\\"${PODS_ROOT}/FirebaseCrashlytics/run\\"' + '"';
 
         // Generate a unique ID for our new build phase.
         var id = xcodeProject.generateUuid();
@@ -139,20 +139,27 @@ module.exports = {
     ensureRunpathSearchPath: function(context, xcodeProjectPath){
 
         function addRunpathSearchBuildProperty(proj, build) {
-            const LD_RUNPATH_SEARCH_PATHS = proj.getBuildProperty("LD_RUNPATH_SEARCH_PATHS", build);
-            if (!LD_RUNPATH_SEARCH_PATHS) {
-                proj.addBuildProperty("LD_RUNPATH_SEARCH_PATHS", "\"$(inherited) @executable_path/Frameworks\"", build);
+            let LD_RUNPATH_SEARCH_PATHS = proj.getBuildProperty("LD_RUNPATH_SEARCH_PATHS", build);
+
+            if (!Array.isArray(LD_RUNPATH_SEARCH_PATHS)) {
+                LD_RUNPATH_SEARCH_PATHS = [LD_RUNPATH_SEARCH_PATHS];
             }
-            if (LD_RUNPATH_SEARCH_PATHS.indexOf("@executable_path/Frameworks") == -1) {
-                var newValue = LD_RUNPATH_SEARCH_PATHS.substr(0, LD_RUNPATH_SEARCH_PATHS.length - 1);
-                newValue += ' @executable_path/Frameworks\"';
-                proj.updateBuildProperty("LD_RUNPATH_SEARCH_PATHS", newValue, build);
-            }
-            if (LD_RUNPATH_SEARCH_PATHS.indexOf("$(inherited)") == -1) {
-                var newValue = LD_RUNPATH_SEARCH_PATHS.substr(0, LD_RUNPATH_SEARCH_PATHS.length - 1);
-                newValue += ' $(inherited)\"';
-                proj.updateBuildProperty("LD_RUNPATH_SEARCH_PATHS", newValue, build);
-            }
+
+            LD_RUNPATH_SEARCH_PATHS.forEach(LD_RUNPATH_SEARCH_PATH => {
+                if (!LD_RUNPATH_SEARCH_PATH) {
+                    proj.addBuildProperty("LD_RUNPATH_SEARCH_PATHS", "\"$(inherited) @executable_path/Frameworks\"", build);
+                }
+                if (LD_RUNPATH_SEARCH_PATH.indexOf("@executable_path/Frameworks") == -1) {
+                    var newValue = LD_RUNPATH_SEARCH_PATH.substr(0, LD_RUNPATH_SEARCH_PATH.length - 1);
+                    newValue += ' @executable_path/Frameworks\"';
+                    proj.updateBuildProperty("LD_RUNPATH_SEARCH_PATHS", newValue, build);
+                }
+                if (LD_RUNPATH_SEARCH_PATH.indexOf("$(inherited)") == -1) {
+                    var newValue = LD_RUNPATH_SEARCH_PATH.substr(0, LD_RUNPATH_SEARCH_PATH.length - 1);
+                    newValue += ' $(inherited)\"';
+                    proj.updateBuildProperty("LD_RUNPATH_SEARCH_PATHS", newValue, build);
+                }
+            });
         }
 
         // Read and parse the XCode project (.pxbproj) from disk.
@@ -182,11 +189,14 @@ module.exports = {
             console.log('cordova-plugin-firebasex: Applied IOS_STRIP_DEBUG to Podfile');
         }
     },
-    applyPluginVarsToPlists: function(googlePlistPath, appPlistPath, pluginVariables){
-        var googlePlist = plist.parse(fs.readFileSync(path.resolve(googlePlistPath), 'utf8')),
-            appPlist = plist.parse(fs.readFileSync(path.resolve(appPlistPath), 'utf8')),
+    applyPluginVarsToPlists: function(pluginVariables, iosPlatform){
+        var googlePlist = plist.parse(fs.readFileSync(path.resolve(iosPlatform.dest), 'utf8')),
+            appPlist = plist.parse(fs.readFileSync(path.resolve(iosPlatform.appPlist), 'utf8')),
+            entitlementsDebugPlist = plist.parse(fs.readFileSync(path.resolve(iosPlatform.entitlementsDebugPlist), 'utf8')),
+            entitlementsReleasePlist = plist.parse(fs.readFileSync(path.resolve(iosPlatform.entitlementsReleasePlist), 'utf8')),
             googlePlistModified = false,
-            appPlistModified = false;
+            appPlistModified = false,
+            entitlementsPlistsModified = false;
 
         if(typeof pluginVariables['FIREBASE_ANALYTICS_COLLECTION_ENABLED'] !== 'undefined'){
             googlePlist["FIREBASE_ANALYTICS_COLLECTION_ENABLED"] = (pluginVariables['FIREBASE_ANALYTICS_COLLECTION_ENABLED'] !== "false" ? "true" : "false") ;
@@ -197,7 +207,7 @@ module.exports = {
             googlePlistModified = true;
         }
         if(typeof pluginVariables['FIREBASE_CRASHLYTICS_COLLECTION_ENABLED'] !== 'undefined'){
-            googlePlist["FIREBASE_CRASHLYTICS_COLLECTION_ENABLED"] = (pluginVariables['FIREBASE_CRASHLYTICS_COLLECTION_ENABLED'] !== "false" ? "true" : "false") ;
+            googlePlist["FirebaseCrashlyticsCollectionEnabled"] = (pluginVariables['FIREBASE_CRASHLYTICS_COLLECTION_ENABLED'] !== "false" ? "true" : "false") ;
             googlePlistModified = true;
         }
         if(typeof pluginVariables['IOS_SHOULD_ESTABLISH_DIRECT_CHANNEL'] !== 'undefined'){
@@ -224,8 +234,17 @@ module.exports = {
             appPlist['CFBundleURLTypes'][i] = entry;
             appPlistModified = true;
         }
+        if(pluginVariables['IOS_ENABLE_APPLE_SIGNIN'] === 'true'){
+            entitlementsDebugPlist["com.apple.developer.applesignin"] = ["Default"];
+            entitlementsReleasePlist["com.apple.developer.applesignin"] = ["Default"];
+            entitlementsPlistsModified = true;
+        }
 
-        if(googlePlistModified) fs.writeFileSync(path.resolve(googlePlistPath), plist.build(googlePlist));
-        if(appPlistModified) fs.writeFileSync(path.resolve(appPlistPath), plist.build(appPlist));
+        if(googlePlistModified) fs.writeFileSync(path.resolve(iosPlatform.dest), plist.build(googlePlist));
+        if(appPlistModified) fs.writeFileSync(path.resolve(iosPlatform.appPlist), plist.build(appPlist));
+        if(entitlementsPlistsModified){
+            fs.writeFileSync(path.resolve(iosPlatform.entitlementsDebugPlist), plist.build(entitlementsDebugPlist));
+            fs.writeFileSync(path.resolve(iosPlatform.entitlementsReleasePlist), plist.build(entitlementsReleasePlist));
+        }
     }
 };

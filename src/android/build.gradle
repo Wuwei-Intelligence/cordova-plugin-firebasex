@@ -5,14 +5,9 @@ buildscript {
         jcenter()
     }
     dependencies {
-        // classpath 'com.android.tools.build:gradle:3.4.1'
-
-        // Add the Google Services Gradle plugin (if it's not there already).
-        classpath 'com.google.gms:google-services:4.3.4'
-
-        // Add the Crashlytics Gradle plugin (be sure to add version
-        // 2.0.0 or later if you built your app with Android Studio 4.1).
-        classpath 'com.google.firebase:firebase-crashlytics-gradle:2.4.1'
+        classpath 'com.android.tools.build:gradle:3.4.1'
+        classpath 'com.google.gms:google-services:4.3.3'
+        classpath 'com.google.firebase:firebase-crashlytics-gradle:2.1.1'
     }
 }
 repositories {
@@ -22,34 +17,33 @@ repositories {
     }
 }
 
-cdvPluginPostBuildExtras.add({
-    rootProject.subprojects {
-        if (name == "app") {
-            if (!plugins.hasPlugin('com.google.gms.google-services')) {
-                apply {
-                    plugin com.google.gms.googleservices.GoogleServicesPlugin
-                }
-
-                apply {
-                    plugin: 'com.google.firebase.crashlytics'
-                }
-
-                // Disable strict version check as it causes problems
-                com.google.gms.googleservices.GoogleServicesPlugin.config.disableVersionCheck = true
+apply plugin: com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsPlugin
+android {
+    buildTypes {
+        debug {
+            firebaseCrashlytics {
+                mappingFileUploadEnabled false
+            }
+        }
+        release {
+            firebaseCrashlytics {
+                nativeSymbolUploadEnabled true
+                unstrippedNativeLibsDir "obj/local"
+                strippedNativeLibsDir "build/intermediates/jniLibs/release"
             }
         }
     }
-    // Use class instead of id (string) to be able to apply plugin from non-root gradle file
+}
 
-    apply plugin: com.crashlytics.tools.gradle.CrashlyticsPlugin
-
-    // apply plugin: com.google.gms.google-services
-
-    // apply plugin: com.google.firebase.crashlytics
-
-    // Enable Crashlytics NDK reporting
-    crashlytics {
-        // enableNdk true
+cdvPluginPostBuildExtras.add({
+    afterEvaluate {
+        rootProject.subprojects {
+            if (name == "app") {
+                if (!plugins.hasPlugin('com.google.gms.google-services')) {
+                    apply plugin: com.google.gms.googleservices.GoogleServicesPlugin
+                }
+            }
+        }
     }
 })
 
