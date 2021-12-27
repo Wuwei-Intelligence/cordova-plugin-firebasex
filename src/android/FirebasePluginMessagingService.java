@@ -371,9 +371,19 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 int int_id_hashCode = id.hashCode();
 
                 // fullScreenPendingIntent
-                // Intent fullScreenIntent = new Intent(this, FullscreenActivity.class);
-                // PendingIntent fullScreenPendingIntent = PendingIntent.getActivity(this, 0,
-                // fullScreenIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+                Intent fullScreenIntent = new Intent(this, FullscreenActivity.class);
+                Bundle fullScreenInfo = new Bundle();
+                fullScreenInfo.putInt("notify_hashCode_id", CallId);
+                fullScreenInfo.putString("android_voip_messageType", "voip");
+                fullScreenInfo.putString("android_voip_title", title);
+                fullScreenInfo.putString("android_voip_session_id", android_voip_session_id);
+                fullScreenInfo.putString("android_voip_token", android_voip_token);
+                fullScreenInfo.putString("android_voip_callback_pickup_url", android_voip_callback_pickup_url);
+                fullScreenInfo.putString("android_voip_callback_hangup_url", android_voip_callback_hangup_url);
+                fullScreenInfo.putString("android_voip_callback_reject_url", android_voip_callback_reject_url);
+                fullScreenInfo.putString("android_voip_action", android_voip);
+                fullScreenIntent.putExtras(fullScreenInfo);
+                PendingIntent fullScreenPendingIntent = PendingIntent.getActivity(this, CallId, fullScreenIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
                 // Channel
                 if(channelId == null || !FirebasePlugin.channelExists(channelId)){
@@ -389,12 +399,28 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                     .setContentTitle(title)
                     .setContentText(body)
                     .setCategory(NotificationCompat.CATEGORY_CALL);
-                    // .setFullScreenIntent(fullScreenPendingIntent, true);
+                    .setAutoCancel(true)
+                    .setFullScreenIntent(fullScreenPendingIntent, true);
 
                 // Channel Id
                 if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
                     notificationBuilder.setChannelId(channelId);
                 }
+
+                // Cancel Action
+                Intent cancelIntent = new Intent(this, OnNotificationOpenReceiver.class);
+                cancelIntent.setAction("Cancel");
+                Bundle cancelInfo = new Bundle();
+                cancelInfo.putString("android_voip_messageType", "voip");
+                cancelInfo.putInt("notify_hashCode_id", CallId);
+                cancelInfo.putString("android_voip_session_id", android_voip_session_id);
+                cancelInfo.putString("android_voip_callback_reject_url", android_voip_callback_reject_url);
+                cancelIntent.putExtras(cancelInfo);
+                PendingIntent cancelPendingIntent = PendingIntent.getBroadcast(this, int_id_hashCode, cancelIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+                notificationBuilder.addAction(
+                    android.R.drawable.sym_call_missed
+                    , "拒接",
+                    cancelPendingIntent);
 
                 // Confirm Action
                 Intent confirmIntent = new Intent(this, OnNotificationOpenReceiver.class);
@@ -416,21 +442,6 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                     android.R.drawable.sym_call_incoming
                     ,"接聽",
                     confirmPendingIntent);
-
-                // Cancel Action
-                Intent cancelIntent = new Intent(this, OnNotificationOpenReceiver.class);
-                cancelIntent.setAction("Cancel");
-                Bundle cancelInfo = new Bundle();
-                cancelInfo.putString("android_voip_messageType", "voip");
-                cancelInfo.putInt("notify_hashCode_id", CallId);
-                cancelInfo.putString("android_voip_session_id", android_voip_session_id);
-                cancelInfo.putString("android_voip_callback_reject_url", android_voip_callback_reject_url);
-                cancelIntent.putExtras(cancelInfo);
-                PendingIntent cancelPendingIntent = PendingIntent.getBroadcast(this, int_id_hashCode, cancelIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-                notificationBuilder.addAction(
-                    android.R.drawable.sym_call_missed
-                    , "拒接",
-                    cancelPendingIntent);
 
                 // On Android O+ the sound/lights/vibration are determined by the channel ID
                 if(Build.VERSION.SDK_INT < Build.VERSION_CODES.O){
@@ -569,6 +580,10 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 info.putString("callback_reject_url", android_voip_callback_reject_url);
                 info.putString("action", android_voip);
                 FirebasePlugin.sendMessage(info, this.getApplicationContext());
+                // 廣播
+                Intent intent = new Intent("city.waffle.intercom.action.notification");
+                intent.putExtras(info);
+                LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
             }
         }
     }
