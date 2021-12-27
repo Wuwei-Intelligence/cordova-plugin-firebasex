@@ -2,4 +2,5 @@
 <resources>
     <string name="default_notification_channel_id">fcm_default_channel</string>
     <string name="default_notification_channel_name">Default</string>
+    <string name="title_activity_fullscreen">Intercom</string>
 </resources>
