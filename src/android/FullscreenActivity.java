@@ -72,9 +72,7 @@ public class FullscreenActivity extends AppCompatActivity {
         send_data.putString("reject_url", _notificationSendBundle.getString("android_voip_callback_reject_url"));
         FirebasePlugin.sendMessage(send_data, null);
 
-        // 取消通知
-        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.cancel("WaffleIntercomIncommingCall", _notificationSendBundle.getInt("notify_hashCode_id"));
+        this.cancelNotification();
 
         // 透過 ActivityManager - 檢查 city.waffle.manager.dev.MainActivity 是不是存在
         ActivityManager _activityManager = (ActivityManager) getSystemService( ACTIVITY_SERVICE );
@@ -97,7 +95,12 @@ public class FullscreenActivity extends AppCompatActivity {
         String reject_url = _notificationSendBundle.getString("android_voip_callback_reject_url");
         new HttpURLConnectionPost().execute(reject_url, sessionid);
 
+        this.cancelNotification();
+    }
+
+    private void cancelNotification() {
         // 取消通知
+        Bundle _notificationSendBundle = getIntent().getExtras();
         NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.cancel("WaffleIntercomIncommingCall", _notificationSendBundle.getInt("notify_hashCode_id"));
     }
