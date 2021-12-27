@@ -398,7 +398,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 notificationBuilder
                     .setContentTitle(title)
                     .setContentText(body)
-                    .setCategory(NotificationCompat.CATEGORY_CALL);
+                    .setCategory(NotificationCompat.CATEGORY_CALL)
                     .setAutoCancel(true)
                     .setFullScreenIntent(fullScreenPendingIntent, true);
 
