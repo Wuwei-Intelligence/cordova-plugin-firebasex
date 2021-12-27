@@ -33,6 +33,7 @@
 			<uses-permission android:name="android.permission.INTERNET" />
 			<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 			<uses-permission android:name="android.permission.WAKE_LOCK" />
+			<!-- FullscreenActivity -->
 			<uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 		</config-file>
 		<config-file target="AndroidManifest.xml" parent="application">
@@ -49,6 +50,7 @@
 			<meta-data android:name="firebase_performance_collection_enabled" android:value="$FIREBASE_PERFORMANCE_COLLECTION_ENABLED" />
 			<meta-data android:name="firebase_crashlytics_collection_enabled" android:value="$FIREBASE_CRASHLYTICS_COLLECTION_ENABLED" />
 		</config-file>
+		<!-- FullscreenActivity -->
 		<config-file target="AndroidManifest.xml" parent="/manifest/application">
 			<activity
 				android:name="org.apache.cordova.firebase.FullscreenActivity"
@@ -64,6 +66,7 @@
 		<source-file src="src/android/FirebasePluginMessageReceiver.java" target-dir="src/org/apache/cordova/firebase" />
 		<source-file src="src/android/FirebasePluginMessageReceiverManager.java" target-dir="src/org/apache/cordova/firebase" />
 		<source-file src="src/android/JavaScriptException.java" target-dir="src/org/apache/cordova/firebase"/>
+		<!-- FullscreenActivity -->
 		<source-file src="src/android/FullscreenActivity.java" target-dir="src/org/apache/cordova/firebase"/>
 		<source-file src="src/android/activity_fullscreen.xml" target-dir="res/layout"/>
 
