@@ -46,15 +46,11 @@ public class FullscreenActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON | WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
 
-        // 取消通知
-        Bundle _notificationSendBundle = getIntent().getExtras();
-        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.cancel("WaffleIntercomIncommingCall", _notificationSendBundle.getInt("notify_hashCode_id"));
-
         // 監聽廣播
         LocalBroadcastManager.getInstance(this).registerReceiver(mConnReceiver, new IntentFilter("city.waffle.intercom.action.notification"));
 
         //
+        Bundle _notificationSendBundle = getIntent().getExtras();
         String _title = _notificationSendBundle.getString("android_voip_title");
         if (_title != null) {
             binding.callTitle.setText(_title);
@@ -76,6 +72,10 @@ public class FullscreenActivity extends AppCompatActivity {
         send_data.putString("reject_url", _notificationSendBundle.getString("android_voip_callback_reject_url"));
         FirebasePlugin.sendMessage(send_data, null);
 
+        // 取消通知
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.cancel("WaffleIntercomIncommingCall", _notificationSendBundle.getInt("notify_hashCode_id"));
+
         // 透過 ActivityManager - 檢查 city.waffle.manager.dev.MainActivity 是不是存在
         ActivityManager _activityManager = (ActivityManager) getSystemService( ACTIVITY_SERVICE );
         List<ActivityManager.RunningTaskInfo> taskList = _activityManager.getRunningTasks(10);
@@ -96,5 +96,9 @@ public class FullscreenActivity extends AppCompatActivity {
         String sessionid = _notificationSendBundle.getString("android_voip_session_id");
         String reject_url = _notificationSendBundle.getString("android_voip_callback_reject_url");
         new HttpURLConnectionPost().execute(reject_url, sessionid);
+
+        // 取消通知
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.cancel("WaffleIntercomIncommingCall", _notificationSendBundle.getInt("notify_hashCode_id"));
     }
 }
