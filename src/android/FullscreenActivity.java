@@ -18,7 +18,7 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import java.util.List;
 
-import city.waffle.manager.dev.databinding.ActivityFullscreenBinding;
+import city.waffle.user.dev.databinding.ActivityFullscreenBinding;
 
 import com.dmarc.cordovacall.HttpURLConnectionPost;
 
@@ -74,16 +74,16 @@ public class FullscreenActivity extends AppCompatActivity {
 
         this.cancelNotification();
 
-        // 透過 ActivityManager - 檢查 city.waffle.manager.dev.MainActivity 是不是存在
+        // 透過 ActivityManager - 檢查 city.waffle.user.dev.MainActivity 是不是存在
         ActivityManager _activityManager = (ActivityManager) getSystemService( ACTIVITY_SERVICE );
         List<ActivityManager.RunningTaskInfo> taskList = _activityManager.getRunningTasks(10);
         ActivityManager.RunningTaskInfo task = taskList.get(0);
         if (!(
             task != null &&
-                task.baseActivity.getClassName().equals("city.waffle.manager.dev.MainActivity") &&
+                task.baseActivity.getClassName().equals("city.waffle.user.dev.MainActivity") &&
                 task.topActivity.getClassName().equals(this.getClass().getName())
         )) {
-            Intent _mainActivity = new Intent(this, city.waffle.manager.dev.MainActivity.class);
+            Intent _mainActivity = new Intent(this, city.waffle.user.dev.MainActivity.class);
             startActivity(_mainActivity);
         }
         finish();
