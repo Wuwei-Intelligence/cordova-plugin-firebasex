@@ -5,50 +5,98 @@
     android:id="@+id/container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFFFF">
+    android:background="#333">
 
 
-    <Button
+    <ImageButton
         android:id="@+id/cutOffCall"
-        android:layout_width="130dp"
-        android:layout_height="48dp"
-        android:layout_marginStart="48dp"
-        android:layout_marginTop="484dp"
-        android:background="#F36D6D"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_marginStart="64dp"
+        android:layout_marginBottom="64dp"
+        android:background="@drawable/cordova_plugin_firebase_btn_cancel"
         android:onClick="onCutOffCall"
-        android:text="拒接"
-        android:textAllCaps="false"
+        android:src="@drawable/ic_action_cordova_plugin_firebase_close"
         android:textColor="#FFFFFF"
         android:textSize="20sp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
-    <Button
+    <ImageButton
         android:id="@+id/pickUpCall"
-        android:layout_width="130dp"
-        android:layout_height="48dp"
-        android:layout_marginTop="484dp"
-        android:layout_marginEnd="48dp"
-        android:background="#4CAF50"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_marginEnd="64dp"
+        android:layout_marginBottom="64dp"
+        android:background="@drawable/cordova_plugin_firebase_btn_submit"
         android:onClick="onPickUp"
+        android:src="@drawable/ic_action_cordova_plugin_firebase_check"
         android:text="接聽"
         android:textColor="#FFFFFF"
         android:textSize="20sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <TextView
         android:id="@+id/callTitle"
         android:layout_width="400dp"
-        android:layout_height="55dp"
+        android:layout_height="wrap_content"
         android:layout_marginTop="164dp"
         android:text="來電通知"
         android:textAlignment="center"
-        android:textColor="#000000"
+        android:textColor="#fff"
         android:textSize="34sp"
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/textViewClose"
+        android:layout_width="80dp"
+        android:layout_height="20dp"
+        android:layout_marginStart="64dp"
+        android:layout_marginTop="8dp"
+        android:text="拒接"
+        android:textAlignment="center"
+        android:textColor="#fff"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/cutOffCall" />
+
+    <TextView
+        android:id="@+id/textViewSubmit"
+        android:layout_width="80dp"
+        android:layout_height="20dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="64dp"
+        android:text="接聽"
+        android:textAlignment="center"
+        android:textColor="#fff"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/pickUpCall" />
+
+    <TextView
+        android:id="@+id/textViewAppName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="208dp"
+        android:text="@string/app_name"
+        android:textColor="#fff"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.547"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:layout_marginTop="208dp"
+        android:layout_marginEnd="3dp"
+        app:layout_constraintEnd_toStartOf="@+id/textViewAppName"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/waffle_notification" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
