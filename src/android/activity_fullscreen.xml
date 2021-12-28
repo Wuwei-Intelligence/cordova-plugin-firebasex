@@ -87,8 +87,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <ImageView
-        android:id="@+id/imageView"
+    <androidx.cardview.widget.CardView
         android:layout_width="20dp"
         android:layout_height="20dp"
         android:layout_marginTop="208dp"
@@ -96,7 +95,12 @@
         app:layout_constraintEnd_toStartOf="@+id/textViewAppName"
         app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/waffle_notification" />
+        app:layout_constraintTop_toTopOf="parent">
+        <ImageView
+            android:id="@+id/imageView2"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:srcCompat="@mipmap/ic_launcher"/>
+    </androidx.cardview.widget.CardView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

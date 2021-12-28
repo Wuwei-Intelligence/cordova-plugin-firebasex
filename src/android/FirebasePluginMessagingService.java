@@ -581,7 +581,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 info.putString("callback_reject_url", android_voip_callback_reject_url);
                 info.putString("action", android_voip);
                 FirebasePlugin.sendMessage(info, this.getApplicationContext());
-                // 廣播
+                // 向指定Action廣播 - 目前是FullScreenActivity.java有接收
                 Intent intent = new Intent("city.waffle.intercom.action.notification");
                 intent.putExtras(info);
                 LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
