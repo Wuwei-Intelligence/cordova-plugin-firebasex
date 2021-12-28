@@ -54,4 +54,13 @@
 ````
 .setFullScreenIntent(fullScreenPendingIntent, true);
 ````
+### 在build.gradle打開ViewBinding開關
+````
+android {
+    // ...
+    buildFeatures {
+        viewBinding true
+    }
+}
+````
 ----
