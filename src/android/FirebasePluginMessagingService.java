@@ -384,7 +384,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 fullScreenInfo.putString("android_voip_callback_reject_url", android_voip_callback_reject_url);
                 fullScreenInfo.putString("android_voip_action", android_voip);
                 fullScreenIntent.putExtras(fullScreenInfo);
-                PendingIntent fullScreenPendingIntent = PendingIntent.getActivity(this, CallId, fullScreenIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+                PendingIntent fullScreenPendingIntent = PendingIntent.getActivity(this, CallId, fullScreenIntent, PendingIntent.FLAG_CANCEL_CURRENT);
 
                 // Channel
                 if(channelId == null || !FirebasePlugin.channelExists(channelId)){
