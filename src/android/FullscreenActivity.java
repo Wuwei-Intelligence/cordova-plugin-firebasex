@@ -57,6 +57,7 @@ public class FullscreenActivity extends AppCompatActivity {
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     public void onPickUp(View view) {
         //
         Bundle _notificationSendBundle = getIntent().getExtras();
@@ -73,29 +74,22 @@ public class FullscreenActivity extends AppCompatActivity {
         FirebasePlugin.sendMessage(send_data, null);
 
         this.cancelNotification();
+        finishAndRemoveTask();
 
-        // 透過 ActivityManager - 檢查 city.waffle.user.dev.MainActivity 是不是存在
-        ActivityManager _activityManager = (ActivityManager) getSystemService( ACTIVITY_SERVICE );
-        List<ActivityManager.RunningTaskInfo> taskList = _activityManager.getRunningTasks(10);
-        ActivityManager.RunningTaskInfo task = taskList.get(0);
-        if (!(
-            task != null &&
-                task.baseActivity.getClassName().equals("city.waffle.user.dev.MainActivity") &&
-                task.topActivity.getClassName().equals(this.getClass().getName())
-        )) {
-            Intent _mainActivity = new Intent(this, city.waffle.user.dev.MainActivity.class);
-            startActivity(_mainActivity);
-        }
-        finish();
+        Intent _mainActivity = new Intent(this, city.waffle.manager.dev.MainActivity.class);
+        _mainActivity.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        _mainActivity.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(_mainActivity);
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     public void onCutOffCall(View view) {
         Bundle _notificationSendBundle = getIntent().getExtras();
         String sessionid = _notificationSendBundle.getString("android_voip_session_id");
         String reject_url = _notificationSendBundle.getString("android_voip_callback_reject_url");
         new HttpURLConnectionPost().execute(reject_url, sessionid);
-
         this.cancelNotification();
+        finishAndRemoveTask();
     }
 
     private void cancelNotification() {
