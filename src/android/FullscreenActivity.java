@@ -76,7 +76,7 @@ public class FullscreenActivity extends AppCompatActivity {
         this.cancelNotification();
         finishAndRemoveTask();
 
-        Intent _mainActivity = new Intent(this, city.waffle.manager.MainActivity.class);
+        Intent _mainActivity = new Intent(this, city.waffle.user.dev.MainActivity.class);
         _mainActivity.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
         _mainActivity.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(_mainActivity);
