@@ -18,7 +18,7 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import java.util.List;
 
-import city.waffle.user.databinding.ActivityFullscreenBinding;
+import city.waffle.manager.dev.databinding.ActivityFullscreenBinding;
 
 import com.dmarc.cordovacall.HttpURLConnectionPost;
 
@@ -76,7 +76,7 @@ public class FullscreenActivity extends AppCompatActivity {
         this.cancelNotification();
         finishAndRemoveTask();
 
-        Intent _mainActivity = new Intent(this, city.waffle.user.MainActivity.class);
+        Intent _mainActivity = new Intent(this, city.waffle.manager.dev.MainActivity.class);
         _mainActivity.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
         _mainActivity.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(_mainActivity);
