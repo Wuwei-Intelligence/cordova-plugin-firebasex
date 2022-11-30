@@ -2,8 +2,10 @@ package org.apache.cordova.firebase;
 
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.app.TaskStackBuilder;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.BitmapFactory;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -213,25 +215,23 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
         this.putKVInBundle("sent_time", String.valueOf(remoteMessage.getSentTime()), bundle);
         this.putKVInBundle("ttl", String.valueOf(remoteMessage.getTtl()), bundle);
 
+        // Only add on platform levels that support FLAG_MUTABLE
+        final int _pendingIntentFlag = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? PendingIntent.FLAG_MUTABLE : PendingIntent.FLAG_UPDATE_CURRENT;
+        final boolean _pendingIntentAndroidSPlus = getApplicationInfo().targetSdkVersion >= Build.VERSION_CODES.S && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S;
+
         if (android_voip == null) {
             if (showNotification) {
-                // Intent intent = new Intent(this, OnNotificationOpenReceiver.class);
-                // intent.putExtras(bundle);
-                // PendingIntent pendingIntent = PendingIntent.getBroadcast(this, id.hashCode(), intent, PendingIntent.FLAG_UPDATE_CURRENT);
-    
-                // Only add on platform levels that support FLAG_IMMUTABLE
                 Intent intent;
                 PendingIntent pendingIntent;
-                final int flag = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE : PendingIntent.FLAG_UPDATE_CURRENT;  // Only add on platform levels that support FLAG_MUTABLE
 
-                if(getApplicationInfo().targetSdkVersion >= Build.VERSION_CODES.S && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if(_pendingIntentAndroidSPlus) {
                     intent = new Intent(this, OnNotificationReceiverActivity.class);
                     intent.putExtras(bundle);
-                    pendingIntent = PendingIntent.getActivity(this, id.hashCode(), intent, flag);
+                    pendingIntent = PendingIntent.getActivity(this, id.hashCode(), intent, _pendingIntentFlag);
                 }else{
                     intent = new Intent(this, OnNotificationOpenReceiver.class);
                     intent.putExtras(bundle);
-                    pendingIntent = PendingIntent.getBroadcast(this, id.hashCode(), intent, flag);
+                    pendingIntent = PendingIntent.getBroadcast(this, id.hashCode(), intent, _pendingIntentFlag);
                 }
 
                 // Channel
@@ -241,7 +241,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
                     Log.d(TAG, "Channel ID: "+channelId);
                 }
-    
+
                 NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, channelId);
                 notificationBuilder
                     .setContentTitle(title)
@@ -249,7 +249,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                     .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
                     .setAutoCancel(true)
                     .setContentIntent(pendingIntent);
-    
+
                 // On Android O+ the sound/lights/vibration are determined by the channel ID
                 if(Build.VERSION.SDK_INT < Build.VERSION_CODES.O){
                     // Sound
@@ -263,7 +263,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                         Log.d(TAG, "Sound: custom=" + sound+"; path="+soundPath.toString());
                         notificationBuilder.setSound(soundPath);
                     }
-    
+
                     // Light
                     if (light != null) {
                         try {
@@ -275,10 +275,10 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                                 notificationBuilder.setLights(lightArgb, lightOnMs, lightOffMs);
                                 Log.d(TAG, "Lights: color="+lightsComponents[0]+"; on(ms)="+lightsComponents[2]+"; off(ms)="+lightsComponents[3]);
                             }
-    
+
                         } catch (Exception e) {}
                     }
-    
+
                     // Vibrate
                     if (vibrate != null){
                         try {
@@ -296,14 +296,14 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                         }
                     }
                 }
-    
+
                 // Icon
                 int defaultSmallIconResID = getResources().getIdentifier(defaultSmallIconName, "drawable", getPackageName());
                 int customSmallIconResID = 0;
                 if(icon != null){
                     customSmallIconResID = getResources().getIdentifier(icon, "drawable", getPackageName());
                 }
-    
+
                 if (customSmallIconResID != 0) {
                     notificationBuilder.setSmallIcon(customSmallIconResID);
                     Log.d(TAG, "Small icon: custom="+icon);
@@ -314,14 +314,14 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                     Log.d(TAG, "Small icon: application");
                     notificationBuilder.setSmallIcon(getApplicationInfo().icon);
                 }
-    
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     int defaultLargeIconResID = getResources().getIdentifier(defaultLargeIconName, "drawable", getPackageName());
                     int customLargeIconResID = 0;
                     if(icon != null){
                         customLargeIconResID = getResources().getIdentifier(icon+"_large", "drawable", getPackageName());
                     }
-    
+
                     int largeIconResID;
                     if (customLargeIconResID != 0 || defaultLargeIconResID != 0) {
                         if (customLargeIconResID != 0) {
@@ -334,9 +334,9 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                         notificationBuilder.setLargeIcon(BitmapFactory.decodeResource(getApplicationContext().getResources(), largeIconResID));
                     }
                 }
-    
+
                 // Color
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     int defaultColor = getResources().getColor(getResources().getIdentifier("accent", "color", getPackageName()), null);
                     if(color != null){
                         notificationBuilder.setColor(Color.parseColor(color));
@@ -346,7 +346,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                         notificationBuilder.setColor(defaultColor);
                     }
                 }
-    
+
                 // Visibility
                 int iVisibility = NotificationCompat.VISIBILITY_PUBLIC;
                 if(visibility != null){
@@ -354,7 +354,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 }
                 Log.d(TAG, "Visibility: " + iVisibility);
                 notificationBuilder.setVisibility(iVisibility);
-    
+
                 // Priority
                 int iPriority = NotificationCompat.PRIORITY_MAX;
                 if(priority != null){
@@ -362,11 +362,11 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 }
                 Log.d(TAG, "Priority: " + iPriority);
                 notificationBuilder.setPriority(iPriority);
-    
-    
+
+
                 // Build notification
                 Notification notification = notificationBuilder.build();
-    
+
                 // Display notification
                 NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
                 Log.d(TAG, "show notification: "+notification.toString());
@@ -400,7 +400,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 fullScreenInfo.putString("android_voip_callback_reject_url", android_voip_callback_reject_url);
                 fullScreenInfo.putString("android_voip_action", android_voip);
                 fullScreenIntent.putExtras(fullScreenInfo);
-                PendingIntent fullScreenPendingIntent = PendingIntent.getActivity(this, CallId, fullScreenIntent, PendingIntent.FLAG_CANCEL_CURRENT);
+                PendingIntent fullScreenPendingIntent = PendingIntent.getActivity(this, CallId, fullScreenIntent, _pendingIntentFlag);
 
                 // Channel
                 if(channelId == null || !FirebasePlugin.channelExists(channelId)){
@@ -425,23 +425,30 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 }
 
                 // Cancel Action
-                Intent cancelIntent = new Intent(this, OnNotificationOpenReceiver.class);
-                cancelIntent.setAction("Cancel");
+                Intent cancelIntent;
+                PendingIntent cancelPendingIntent;
                 Bundle cancelInfo = new Bundle();
                 cancelInfo.putString("android_voip_messageType", "voip");
                 cancelInfo.putInt("notify_hashCode_id", CallId);
                 cancelInfo.putString("android_voip_session_id", android_voip_session_id);
                 cancelInfo.putString("android_voip_callback_reject_url", android_voip_callback_reject_url);
+                cancelIntent = _pendingIntentAndroidSPlus
+                    ? new Intent(this, OnNotificationReceiverActivity.class)
+                    : new Intent(this, OnNotificationOpenReceiver.class);
+                cancelIntent.setAction("Cancel");
                 cancelIntent.putExtras(cancelInfo);
-                PendingIntent cancelPendingIntent = PendingIntent.getBroadcast(this, int_id_hashCode, cancelIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+                cancelPendingIntent = _pendingIntentAndroidSPlus
+                    ? PendingIntent.getActivity(this, int_id_hashCode, cancelIntent, _pendingIntentFlag)
+                    : PendingIntent.getBroadcast(this, int_id_hashCode, cancelIntent, _pendingIntentFlag);
+
                 notificationBuilder.addAction(
                     android.R.drawable.sym_call_missed
                     , "拒接",
                     cancelPendingIntent);
 
                 // Confirm Action
-                Intent confirmIntent = new Intent(this, OnNotificationOpenReceiver.class);
-                confirmIntent.setAction("Confirm");
+                Intent confirmIntent;
+                PendingIntent confirmPendingIntent;
                 Bundle confirmInfo = new Bundle();
                 confirmInfo.putInt("notify_hashCode_id", CallId);
                 confirmInfo.putString("android_voip_messageType", "voip");
@@ -452,8 +459,14 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 confirmInfo.putString("android_voip_callback_hangup_url", android_voip_callback_hangup_url);
                 confirmInfo.putString("android_voip_callback_reject_url", android_voip_callback_reject_url);
                 confirmInfo.putString("android_voip_action", android_voip);
+                confirmIntent = _pendingIntentAndroidSPlus
+                    ? new Intent(this, OnNotificationReceiverActivity.class)
+                    : new Intent(this, OnNotificationOpenReceiver.class);
+                confirmIntent.setAction("Confirm");
                 confirmIntent.putExtras(confirmInfo);
-                PendingIntent confirmPendingIntent = PendingIntent.getBroadcast(this, int_id_hashCode, confirmIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+                confirmPendingIntent = _pendingIntentAndroidSPlus
+                    ? PendingIntent.getActivity(this, int_id_hashCode, confirmIntent, _pendingIntentFlag)
+                    : PendingIntent.getBroadcast(this, int_id_hashCode, confirmIntent, _pendingIntentFlag);
 
                 notificationBuilder.addAction(
                     android.R.drawable.sym_call_incoming
@@ -526,7 +539,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                     notificationBuilder.setSmallIcon(getApplicationInfo().icon);
                 }
 
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     int defaultLargeIconResID = getResources().getIdentifier(defaultLargeIconName, "drawable", getPackageName());
                     int customLargeIconResID = 0;
                     if(icon != null){
@@ -547,7 +560,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 }
 
                 // Color
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     int defaultColor = getResources().getColor(getResources().getIdentifier("accent", "color", getPackageName()), null);
                     if(color != null){
                         notificationBuilder.setColor(Color.parseColor(color));
