@@ -32,7 +32,7 @@ public class OnNotificationReceiverActivity extends Activity {
             PackageManager pm = context.getPackageManager();
 
             Intent launchIntent = pm.getLaunchIntentForPackage(context.getPackageName());
-            launchIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+            launchIntent.addFlags(Intent.FLAG_MUTABLE);
 
             Bundle data = intent.getExtras();
             if (!data.containsKey("android_voip_messageType")) {
