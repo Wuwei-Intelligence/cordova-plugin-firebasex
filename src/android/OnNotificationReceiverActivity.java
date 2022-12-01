@@ -2,6 +2,7 @@ package org.apache.cordova.firebase;
 
 import android.app.Activity;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -32,7 +33,7 @@ public class OnNotificationReceiverActivity extends Activity {
             PackageManager pm = context.getPackageManager();
 
             Intent launchIntent = pm.getLaunchIntentForPackage(context.getPackageName());
-            launchIntent.addFlags(Intent.FLAG_MUTABLE);
+            launchIntent.addFlags(PendingIntent.FLAG_MUTABLE);
 
             Bundle data = intent.getExtras();
             if (!data.containsKey("android_voip_messageType")) {
