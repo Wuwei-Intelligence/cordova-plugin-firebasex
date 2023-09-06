@@ -5,6 +5,7 @@ import android.app.PendingIntent;
 import android.app.TaskStackBuilder;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.content.pm.PackageManager;
 import android.graphics.BitmapFactory;
 import android.media.RingtoneManager;
@@ -16,8 +17,16 @@ import androidx.core.app.NotificationManagerCompat;
 import android.util.Log;
 import android.app.Notification;
 import android.text.TextUtils;
+import android.text.Html;
+import android.text.Spanned;
 import android.content.ContentResolver;
 import android.graphics.Color;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
+import android.graphics.RectF;
+import android.graphics.Paint;
+import android.graphics.Canvas;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.google.firebase.Timestamp;
@@ -25,6 +34,10 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Map;
 import java.util.Random;
 
@@ -39,6 +52,9 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
     static final String defaultSmallIconName = "notification_icon";
     static final String defaultLargeIconName = "notification_icon_large";
     static final Integer CallId = 99;
+
+    static final String imageTypeCircle = "circle";
+    static final String imageTypeBigPicture = "big_picture";
 
     /**
      * Called if InstanceID token is updated. This may occur if the security of
@@ -56,6 +72,20 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
         }
     }
 
+    public Bitmap getBitmapFromURL(String strURL) {
+        try {
+            URL url = new URL(strURL);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setConnectTimeout(15000);
+            connection.setDoInput(true);
+            connection.connect();
+            InputStream input = connection.getInputStream();
+            return BitmapFactory.decodeStream(input);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
     /**
      * Called when message is received.
@@ -96,7 +126,12 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             // Not getting messages here? See why this may be: https://goo.gl/39bRNJ
             String messageType;
             String title = null;
+            String titleLocKey = null;
+            String[] titleLocArgs = null;
             String body = null;
+            String bodyLocKey = null;
+            String[] bodyLocArgs = null;
+            String bodyHtml = null;
             String id = null;
             String sound = null;
             String vibrate = null;
@@ -106,6 +141,8 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             String channelId = null;
             String visibility = null;
             String priority = null;
+            String image = null;
+            String imageType = null;
             String android_voip = null;
             String android_voip_session_id = null;
             String android_voip_token = null;
@@ -144,6 +181,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 }
                 if(data.containsKey("notification_title")) title = data.get("notification_title");
                 if(data.containsKey("notification_body")) body = data.get("notification_body");
+                if(data.containsKey("notification_android_body_html")) bodyHtml = data.get("notification_android_body_html");
                 if(data.containsKey("notification_android_channel_id")) channelId = data.get("notification_android_channel_id");
                 if(data.containsKey("notification_android_id")) id = data.get("notification_android_id");
                 if(data.containsKey("notification_sound")) sound = data.get("notification_sound");
@@ -153,6 +191,8 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 if(data.containsKey("notification_icon")) icon = data.get("notification_icon");
                 if(data.containsKey("notification_android_visibility")) visibility = data.get("notification_android_visibility");
                 if(data.containsKey("notification_android_priority")) priority = data.get("notification_android_priority");
+                if(data.containsKey("notification_android_image")) image = data.get("notification_android_image");
+                if(data.containsKey("notification_android_image_type")) imageType = data.get("notification_android_image_type");
                 if(data.containsKey("notification_android_voip_action")) android_voip = data.get("notification_android_voip_action");
                 if(data.containsKey("notification_android_voip_session_id")) android_voip_session_id = data.get("notification_android_voip_session_id");
                 if(data.containsKey("notification_android_voip_token")) android_voip_token = data.get("notification_android_voip_token");
@@ -184,14 +224,14 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
 
             if (!TextUtils.isEmpty(body) || !TextUtils.isEmpty(title) || (data != null && !data.isEmpty())) {
                 boolean showNotification = (FirebasePlugin.inBackground() || !FirebasePlugin.hasNotificationsCallback() || foregroundNotification) && (!TextUtils.isEmpty(body) || !TextUtils.isEmpty(title));
-                sendMessage(remoteMessage, data, messageType, id, title, body, showNotification, sound, vibrate, light, color, icon, channelId, priority, visibility, android_voip, android_voip_session_id, android_voip_token, android_voip_callback_pickup_url, android_voip_callback_hangup_url, android_voip_callback_reject_url, android_voip_callback_timestamp);
+                sendMessage(remoteMessage, data, messageType, id, title, body, bodyHtml, showNotification, sound, vibrate, light, color, icon, channelId, priority, visibility, image, imageType, android_voip, android_voip_session_id, android_voip_token, android_voip_callback_pickup_url, android_voip_callback_hangup_url, android_voip_callback_reject_url, android_voip_callback_timestamp);
             }
         }catch (Exception e){
             FirebasePlugin.handleExceptionWithoutContext(e);
         }
     }
 
-    private void sendMessage(RemoteMessage remoteMessage, Map<String, String> data, String messageType, String id, String title, String body, boolean showNotification, String sound, String vibrate, String light, String color, String icon, String channelId, String priority, String visibility, String android_voip, String android_voip_session_id, String android_voip_token, String android_voip_callback_pickup_url, String android_voip_callback_hangup_url, String android_voip_callback_reject_url, Long android_voip_callback_timestamp) {
+    private void sendMessage(RemoteMessage remoteMessage, Map<String, String> data, String messageType, String id, String title, String body, String bodyHtml, boolean showNotification, String sound, String vibrate, String light, String color, String icon, String channelId, String priority, String visibility, String image, String imageType, String android_voip, String android_voip_session_id, String android_voip_token, String android_voip_callback_pickup_url, String android_voip_callback_hangup_url, String android_voip_callback_reject_url, Long android_voip_callback_timestamp) {
         Log.d(TAG, "sendMessage(): messageType="+messageType+"; showNotification="+showNotification+"; id="+id+"; title="+title+"; body="+body+"; sound="+sound+"; vibrate="+vibrate+"; light="+light+"; color="+color+"; icon="+icon+"; channel="+channelId+"; data="+data.toString());
         Bundle bundle = new Bundle();
         for (String key : data.keySet()) {
@@ -219,23 +259,23 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
         this.putKVInBundle("ttl", String.valueOf(remoteMessage.getTtl()), bundle);
 
         // Only add on platform levels that support FLAG_MUTABLE
-        // final int _pendingIntentFlag = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? PendingIntent.FLAG_MUTABLE : PendingIntent.FLAG_UPDATE_CURRENT;
-        final int _pendingIntentFlag = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE : PendingIntent.FLAG_UPDATE_CURRENT;
+        final int _pendingIntentFlag = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? PendingIntent.FLAG_MUTABLE : PendingIntent.FLAG_UPDATE_CURRENT;
         final boolean _pendingIntentAndroidSPlus = getApplicationInfo().targetSdkVersion >= Build.VERSION_CODES.S && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S;
 
         if (android_voip == null) {
             if (showNotification) {
+                final int flag = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? PendingIntent.FLAG_IMMUTABLE : PendingIntent.FLAG_UPDATE_CURRENT;
                 Intent intent;
                 PendingIntent pendingIntent;
 
                 if(_pendingIntentAndroidSPlus) {
                     intent = new Intent(this, OnNotificationReceiverActivity.class);
                     intent.putExtras(bundle);
-                    pendingIntent = PendingIntent.getActivity(this, id.hashCode(), intent, _pendingIntentFlag);
+                    pendingIntent = PendingIntent.getActivity(this, id.hashCode(), intent, flag);
                 }else{
                     intent = new Intent(this, OnNotificationOpenReceiver.class);
                     intent.putExtras(bundle);
-                    pendingIntent = PendingIntent.getBroadcast(this, id.hashCode(), intent, _pendingIntentFlag);
+                    pendingIntent = PendingIntent.getBroadcast(this, id.hashCode(), intent, flag);
                 }
 
                 // Channel
@@ -643,6 +683,42 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
             }
         }
+    }
+
+    private Bitmap getCircleBitmap(Bitmap bitmap) {
+
+        if (bitmap == null) {
+            return null;
+        }
+
+        final Bitmap output = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.ARGB_8888);
+        final Canvas canvas = new Canvas(output);
+        final int color = Color.RED;
+        final Paint paint = new Paint();
+        final Rect rect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
+        final RectF rectF = new RectF(rect);
+
+        paint.setAntiAlias(true);
+        canvas.drawARGB(0, 0, 0, 0);
+        paint.setColor(color);
+        float cx = bitmap.getWidth() / 2;
+        float cy = bitmap.getHeight() / 2;
+        float radius = cx < cy ? cx : cy;
+        canvas.drawCircle(cx, cy, radius, paint);
+
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+        canvas.drawBitmap(bitmap, rect, rect, paint);
+
+        bitmap.recycle();
+
+        return output;
+    }
+
+    private Spanned fromHtml(String source) {
+        if (source != null)
+            return Html.fromHtml(source);
+        else
+            return null;
     }
 
     private void putKVInBundle(String k, String v, Bundle b){
