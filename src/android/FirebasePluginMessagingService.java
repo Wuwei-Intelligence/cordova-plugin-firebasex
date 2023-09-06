@@ -201,6 +201,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
         this.putKVInBundle("id", id, bundle);
         this.putKVInBundle("title", title, bundle);
         this.putKVInBundle("body", body, bundle);
+        this.putKVInBundle("body_html", bodyHtml, bundle);
         this.putKVInBundle("sound", sound, bundle);
         this.putKVInBundle("vibrate", vibrate, bundle);
         this.putKVInBundle("light", light, bundle);
@@ -209,6 +210,8 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
         this.putKVInBundle("channel_id", channelId, bundle);
         this.putKVInBundle("priority", priority, bundle);
         this.putKVInBundle("visibility", visibility, bundle);
+        this.putKVInBundle("image", image, bundle);
+        this.putKVInBundle("image_type", imageType, bundle);
         this.putKVInBundle("show_notification", String.valueOf(showNotification), bundle);
         this.putKVInBundle("from", remoteMessage.getFrom(), bundle);
         this.putKVInBundle("collapse_key", remoteMessage.getCollapseKey(), bundle);
@@ -216,7 +219,8 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
         this.putKVInBundle("ttl", String.valueOf(remoteMessage.getTtl()), bundle);
 
         // Only add on platform levels that support FLAG_MUTABLE
-        final int _pendingIntentFlag = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? PendingIntent.FLAG_MUTABLE : PendingIntent.FLAG_UPDATE_CURRENT;
+        // final int _pendingIntentFlag = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? PendingIntent.FLAG_MUTABLE : PendingIntent.FLAG_UPDATE_CURRENT;
+        final int _pendingIntentFlag = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE : PendingIntent.FLAG_UPDATE_CURRENT;
         final boolean _pendingIntentAndroidSPlus = getApplicationInfo().targetSdkVersion >= Build.VERSION_CODES.S && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S;
 
         if (android_voip == null) {
@@ -245,10 +249,18 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, channelId);
                 notificationBuilder
                     .setContentTitle(title)
-                    .setContentText(body)
-                    .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
                     .setAutoCancel(true)
                     .setContentIntent(pendingIntent);
+
+                if(bodyHtml != null) {
+                    notificationBuilder
+                        .setContentText(fromHtml(body))
+                        .setStyle(new NotificationCompat.BigTextStyle().bigText(fromHtml(body)));
+                }else{
+                    notificationBuilder
+                        .setContentText(body)
+                        .setStyle(new NotificationCompat.BigTextStyle().bigText(body));
+                }
 
                 // On Android O+ the sound/lights/vibration are determined by the channel ID
                 if(Build.VERSION.SDK_INT < Build.VERSION_CODES.O){
@@ -332,6 +344,21 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                             largeIconResID = defaultLargeIconResID;
                         }
                         notificationBuilder.setLargeIcon(BitmapFactory.decodeResource(getApplicationContext().getResources(), largeIconResID));
+                    }
+                }
+
+                // Image
+                if (image != null) {
+                    Log.d(TAG, "Large icon: image="+image);
+                    Bitmap bitmap = getBitmapFromURL(image);
+                    if(bitmap != null) {
+                        if(imageTypeCircle.equalsIgnoreCase(imageType)) {
+                            bitmap = getCircleBitmap(bitmap);
+                        }
+                        else if(imageTypeBigPicture.equalsIgnoreCase(imageType)) {
+                            notificationBuilder.setStyle(new NotificationCompat.BigPictureStyle().bigPicture(bitmap).bigLargeIcon(null));
+                        }
+                        notificationBuilder.setLargeIcon(bitmap);
                     }
                 }
 
