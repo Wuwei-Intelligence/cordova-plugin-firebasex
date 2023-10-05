@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <plugin id="cordova-plugin-firebasex" version="16.1.0"
-	xmlns="http://apache.org/cordova/ns/plugins/1.0"
-	xmlns:android="http://schemas.android.com/apk/res/android">
+		xmlns="http://apache.org/cordova/ns/plugins/1.0"
+		xmlns:android="http://schemas.android.com/apk/res/android">
 	<name>Google Firebase Plugin</name>
 
 	<license>MIT</license>
@@ -73,8 +73,7 @@
 		<preference name="ANDROID_FIREBASE_INAPPMESSAGING_VERSION" default="20.3.2" />
 		<preference name="ANDROID_FIREBASE_FIRESTORE_VERSION" default="24.6.0" />
 		<preference name="ANDROID_FIREBASE_FUNCTIONS_VERSION" default="20.3.0" />
-		<preference name="ANDROID_FIREBASE_IID_VERSION" default="21.1.0" />
-		<!-- deprecated but required by firebase-messaging -->
+		<preference name="ANDROID_FIREBASE_IID_VERSION" default="21.1.0" /> <!-- deprecated but required by firebase-messaging -->
 		<preference name="ANDROID_FIREBASE_INSTALLATIONS_VERSION" default="17.1.3" />
 		<preference name="ANDROID_FIREBASE_CRASHLYTICS_VERSION" default="18.3.7" />
 		<preference name="ANDROID_FIREBASE_CRASHLYTICS_NDK_VERSION" default="18.3.7" />
@@ -105,6 +104,9 @@
 		<hook type="before_plugin_install" src="scripts/ios/before_plugin_install.js" />
 		<hook type="after_plugin_install" src="scripts/ios/after_plugin_install.js" />
 		<hook type="before_plugin_uninstall" src="scripts/ios/before_plugin_uninstall.js" />
+
+		<preference name="IOS_USE_PRECOMPILED_FIRESTORE_POD" default="false" />
+		<preference name="IOS_FCM_ENABLED" default="true" />
 
 		<js-module name="FirebasePlugin" src="www/firebase.js">
 			<clobbers target="FirebasePlugin" />
