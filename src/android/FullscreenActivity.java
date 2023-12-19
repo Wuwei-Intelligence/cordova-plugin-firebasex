@@ -18,7 +18,7 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import java.util.List;
 
-import city.waffle.manager.dev.databinding.ActivityFullscreenBinding;
+import city.waffle.user.dev.databinding.ActivityFullscreenBinding;
 
 import com.dmarc.cordovacall.HttpURLConnectionPost;
 
