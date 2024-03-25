@@ -175,7 +175,7 @@
 				<pod name="FirebaseRemoteConfig" spec="10.17.0"/>
 				<pod name="FirebaseInAppMessaging" spec="10.17.0-beta"/>
 				<pod name="FirebaseFirestore" spec="10.17.0"/>
-				<pod name="FirebaseCrashlytics" spec="10.17.0"/>
+				<pod name="FirebaseCrashlytics" spec="10.22.0"/>
 				<pod name="FirebaseFunctions" spec="10.17.0"/>
 				<pod name="FirebaseInstallations" spec="10.17.0"/>
 				<pod name="GoogleSignIn" spec="6.2.4"/>
