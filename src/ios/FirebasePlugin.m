@@ -30,9 +30,17 @@ static NSString*const FIREBASE_CRASHLYTICS_COLLECTION_ENABLED = @"FIREBASE_CRASH
 static NSString*const FirebaseCrashlyticsCollectionEnabled = @"FirebaseCrashlyticsCollectionEnabled"; //plist
 static NSString*const FIREBASE_ANALYTICS_COLLECTION_ENABLED = @"FIREBASE_ANALYTICS_COLLECTION_ENABLED";
 static NSString*const FIREBASE_PERFORMANCE_COLLECTION_ENABLED = @"FIREBASE_PERFORMANCE_COLLECTION_ENABLED";
+
+static NSString*const GOOGLE_ANALYTICS_ADID_COLLECTION_ENABLED = @"GOOGLE_ANALYTICS_ADID_COLLECTION_ENABLED";
+static NSString*const GOOGLE_ANALYTICS_DEFAULT_ALLOW_ANALYTICS_STORAGE = @"GOOGLE_ANALYTICS_DEFAULT_ALLOW_ANALYTICS_STORAGE";
+static NSString*const GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_STORAGE = @"GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_STORAGE";
+static NSString*const GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_USER_DATA = @"GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_USER_DATA";
+static NSString*const GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_PERSONALIZATION_SIGNALS = @"GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_PERSONALIZATION_SIGNALS";
+
 static NSString*const FIREBASEX_IOS_FCM_ENABLED = @"FIREBASEX_IOS_FCM_ENABLED";
 
 static FirebasePlugin* firebasePlugin;
+static BOOL pluginInitialized = NO;
 static BOOL registeredForRemoteNotifications = NO;
 static BOOL openSettingsEmitted = NO;
 static NSMutableDictionary* authCredentials;
@@ -45,6 +53,7 @@ static NSString* currentInstallationId;
 static NSMutableDictionary* traces;
 static FIRMultiFactorResolver* multiFactorResolver;
 static FIROAuthProvider* oauthProvider;
+static NSMutableArray* pendingGlobalJS = nil;
 
 
 + (FirebasePlugin*) firebasePlugin {
@@ -76,10 +85,6 @@ static FIROAuthProvider* oauthProvider;
 
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(applicationLaunchedWithUrl:) name:CDVPluginHandleOpenURLNotification object:nil];
 
-        if([self getGooglePlistFlagWithDefaultValue:FirebaseCrashlyticsCollectionEnabled defaultValue:YES]){
-            [self setPreferenceFlag:FIREBASE_CRASHLYTICS_COLLECTION_ENABLED flag:YES];
-        }
-
         if([self getGooglePlistFlagWithDefaultValue:FIREBASE_ANALYTICS_COLLECTION_ENABLED defaultValue:YES]){
             [self setPreferenceFlag:FIREBASE_ANALYTICS_COLLECTION_ENABLED flag:YES];
         }
@@ -87,7 +92,32 @@ static FIROAuthProvider* oauthProvider;
         if([self getGooglePlistFlagWithDefaultValue:FIREBASE_PERFORMANCE_COLLECTION_ENABLED defaultValue:YES]){
             [self setPreferenceFlag:FIREBASE_PERFORMANCE_COLLECTION_ENABLED flag:YES];
         }
-        
+
+        if([self getGooglePlistFlagWithDefaultValue:FirebaseCrashlyticsCollectionEnabled defaultValue:YES]){
+            [self setPreferenceFlag:FIREBASE_CRASHLYTICS_COLLECTION_ENABLED flag:YES];
+        }
+
+        if([self getGooglePlistFlagWithDefaultValue:GOOGLE_ANALYTICS_ADID_COLLECTION_ENABLED defaultValue:YES]){
+            [self setPreferenceFlag:GOOGLE_ANALYTICS_ADID_COLLECTION_ENABLED flag:YES];
+        }
+
+        if([self getGooglePlistFlagWithDefaultValue:GOOGLE_ANALYTICS_DEFAULT_ALLOW_ANALYTICS_STORAGE defaultValue:YES]){
+            [self setPreferenceFlag:GOOGLE_ANALYTICS_DEFAULT_ALLOW_ANALYTICS_STORAGE flag:YES];
+        }
+
+        if([self getGooglePlistFlagWithDefaultValue:GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_STORAGE defaultValue:YES]){
+            [self setPreferenceFlag:GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_STORAGE flag:YES];
+        }
+
+        if([self getGooglePlistFlagWithDefaultValue:GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_USER_DATA defaultValue:YES]){
+            [self setPreferenceFlag:GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_USER_DATA flag:YES];
+        }
+
+        if([self getGooglePlistFlagWithDefaultValue:GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_PERSONALIZATION_SIGNALS defaultValue:YES]){
+            [self setPreferenceFlag:GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_PERSONALIZATION_SIGNALS flag:YES];
+        }
+
+
         // We don't need `setPreferenceFlag` here as we don't allow to change this at runtime.
         _isFCMEnabled = [self getGooglePlistFlagWithDefaultValue:FIREBASEX_IOS_FCM_ENABLED defaultValue:YES];
         if (!self.isFCMEnabled) {
@@ -105,6 +135,9 @@ static FIROAuthProvider* oauthProvider;
         authCredentials = [[NSMutableDictionary alloc] init];
         firestoreListeners = [[NSMutableDictionary alloc] init];
         traces = [[NSMutableDictionary alloc] init];
+
+        pluginInitialized = YES;
+        [self executePendingGlobalJavascript];
     }@catch (NSException *exception) {
         [self handlePluginExceptionWithoutContext:exception];
     }
@@ -169,7 +202,7 @@ static FIROAuthProvider* oauthProvider;
 
         // Initialize categories
         [[UNUserNotificationCenter currentNotificationCenter] setNotificationCategories:categories];
-        
+
     }@catch (NSException *exception) {
         [self handlePluginExceptionWithoutContext:exception];
     }
@@ -432,7 +465,7 @@ static FIROAuthProvider* oauthProvider;
 
 - (void)registerForRemoteNotifications {
     NSLog(@"registerForRemoteNotifications");
-    
+
     if(registeredForRemoteNotifications) return;
 
     [self runOnMainThread:^{
@@ -997,32 +1030,33 @@ static FIROAuthProvider* oauthProvider;
     @try {
         __weak __auto_type weakSelf = self;
         GIDConfiguration* googleSignInConfig = [[GIDConfiguration alloc] initWithClientID:[FIRApp defaultApp].options.clientID];
-        [GIDSignIn.sharedInstance signInWithConfiguration:googleSignInConfig presentingViewController:self.viewController callback:^(GIDGoogleUser * _Nullable user, NSError * _Nullable error) {
-          __auto_type strongSelf = weakSelf;
-          if (strongSelf == nil) { return; }
+        GIDSignIn.sharedInstance.configuration = googleSignInConfig;
+        [GIDSignIn.sharedInstance signInWithPresentingViewController:self.viewController completion:^(GIDSignInResult * _Nullable signInResult, NSError * _Nullable error) {
+            __auto_type strongSelf = weakSelf;
+            if (strongSelf == nil) { return; }
 
-            @try{
-                CDVPluginResult* pluginResult;
-                if (error == nil) {
-                    GIDAuthentication *authentication = user.authentication;
-                    FIRAuthCredential *credential =
-                    [FIRGoogleAuthProvider credentialWithIDToken:authentication.idToken
-                                                   accessToken:authentication.accessToken];
+              @try{
+                  CDVPluginResult* pluginResult;
+                  if (error == nil) {
+                      GIDGoogleUser* gidUser = signInResult.user;
+                      FIRAuthCredential *credential =
+                      [FIRGoogleAuthProvider credentialWithIDToken:gidUser.idToken.tokenString
+                                                       accessToken:gidUser.accessToken.tokenString];
 
-                    NSNumber* key = [[FirebasePlugin firebasePlugin] saveAuthCredential:credential];
-                    NSString *idToken = user.authentication.idToken;
-                    NSMutableDictionary* result = [[NSMutableDictionary alloc] init];
-                    [result setValue:@"true" forKey:@"instantVerification"];
-                    [result setValue:key forKey:@"id"];
-                    [result setValue:idToken forKey:@"idToken"];
-                    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:result];
-                } else {
-                    pluginResult = [self createAuthErrorResult:error];
-                }
-                [[FirebasePlugin firebasePlugin].commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
-            }@catch (NSException *exception) {
-                [FirebasePlugin.firebasePlugin handlePluginExceptionWithoutContext:exception];
-            }
+                      NSNumber* key = [[FirebasePlugin firebasePlugin] saveAuthCredential:credential];
+                      NSString *idToken = gidUser.idToken.tokenString;
+                      NSMutableDictionary* result = [[NSMutableDictionary alloc] init];
+                      [result setValue:@"true" forKey:@"instantVerification"];
+                      [result setValue:key forKey:@"id"];
+                      [result setValue:idToken forKey:@"idToken"];
+                      pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:result];
+                  } else {
+                      pluginResult = [self createAuthErrorResult:error];
+                  }
+                  [[FirebasePlugin firebasePlugin].commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+              }@catch (NSException *exception) {
+                  [FirebasePlugin.firebasePlugin handlePluginExceptionWithoutContext:exception];
+              }
         }];
 
         [self sendPluginNoResultAndKeepCallback:command callbackId:command.callbackId];
@@ -1055,12 +1089,12 @@ static FIROAuthProvider* oauthProvider;
         NSString* providerId = @"microsoft.com";
         NSMutableDictionary* customParameters = [[NSMutableDictionary alloc] init];
         [customParameters setValue:@"consent" forKey:@"prompt"];
-        
+
         NSString* locale = [command.arguments objectAtIndex:0];
         if(locale != nil){
             [customParameters setValue:locale forKey:@"locale"];
         }
-        
+
         [self authenticateWithOAuth:command providerId:providerId customParameters:customParameters scopes:nil];
     }@catch (NSException *exception) {
         [self handlePluginExceptionWithContext:exception :command];
@@ -1072,7 +1106,7 @@ static FIROAuthProvider* oauthProvider;
         NSString* providerId = [command.arguments objectAtIndex:0];
         NSDictionary* customParameters = [command.arguments objectAtIndex:1];
         NSArray* scopes = [command.arguments objectAtIndex:2];
-        
+
         [self authenticateWithOAuth:command providerId:providerId customParameters:customParameters scopes:scopes];
     }@catch (NSException *exception) {
         [self handlePluginExceptionWithContext:exception :command];
@@ -1081,22 +1115,22 @@ static FIROAuthProvider* oauthProvider;
 
 -(void)authenticateWithOAuth:(CDVInvokedUrlCommand*)command providerId:(NSString*)providerId customParameters:(NSDictionary*)customParameters scopes:(NSArray*)scopes {
     oauthProvider = [FIROAuthProvider providerWithProviderID:providerId];
-    
+
     if(customParameters != nil){
         for(id key in customParameters){
             id value = [customParameters objectForKey:key];
             [oauthProvider setCustomParameters:@{key: value}];
         }
     }
-    
+
     if(scopes != nil){
         [oauthProvider setScopes:scopes];
     }
-    
-  
+
+
     [oauthProvider getCredentialWithUIDelegate:nil
                         completion:^(FIRAuthCredential *_Nullable credential, NSError *_Nullable error) {
-        
+
         CDVPluginResult* pluginResult;
         if (error) {
             pluginResult = [self createAuthErrorResult:error];
@@ -1173,6 +1207,22 @@ static FIROAuthProvider* oauthProvider;
     }
 }
 
+- (void)unlinkUserWithProvider:(CDVInvokedUrlCommand*)command {
+    @try {
+        if([self userNotSignedInError:command]) return;
+        FIRUser* user = [FIRAuth auth].currentUser;
+
+        NSString* providerId = [command.arguments objectAtIndex:0];
+
+        [user unlinkFromProvider:providerId
+                                            completion:^(FIRUser *_Nullable user, NSError *_Nullable error) {
+            [self handleEmptyResultWithPotentialError:error command:command];
+        }];
+    }@catch (NSException *exception) {
+        [self handlePluginExceptionWithContext:exception :command];
+    }
+}
+
 - (void)isUserSignedIn:(CDVInvokedUrlCommand*)command {
     @try {
         bool isSignedIn = [self isSignedIn];
@@ -1190,7 +1240,7 @@ static FIROAuthProvider* oauthProvider;
         // If signed in with Google
         if([GIDSignIn.sharedInstance currentUser] != nil){
             // Sign out of Google
-            [GIDSignIn.sharedInstance disconnectWithCallback:^(NSError * _Nullable error) {
+            [GIDSignIn.sharedInstance disconnectWithCompletion:^(NSError * _Nullable error) {
                 if (error) {
                     [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[NSString stringWithFormat:@"Error signing out of Google: %@", error]] callbackId:command.callbackId];
                 }
@@ -1574,6 +1624,52 @@ static FIROAuthProvider* oauthProvider;
     }];
 }
 
+- (void)setAnalyticsConsentMode:(CDVInvokedUrlCommand*)command {
+    [self.commandDelegate runInBackground:^{
+        CDVPluginResult* pluginResult = nil;
+        NSDictionary* consentObject = [command.arguments objectAtIndex:0];
+
+        NSMutableDictionary* consentSettings = [[NSMutableDictionary alloc] init];
+
+        NSEnumerator *enumerator = [consentObject keyEnumerator];
+        id key;
+        while ((key = [enumerator nextObject])) {
+            NSString* consentType = [self consentTypeFromString:key];
+            NSString* consentStatus = [self consentStatusFromString:[consentObject objectForKey:key]];
+            [consentSettings setObject:consentStatus forKey:consentType];
+        }
+
+        [FIRAnalytics setConsent:consentSettings];
+
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+    }];
+}
+
+- (NSString*)consentTypeFromString:(NSString*)consentTypeString {
+    if ([consentTypeString isEqualToString:@"ANALYTICS_STORAGE"]) {
+        return FIRConsentTypeAnalyticsStorage;
+    } else if ([consentTypeString isEqualToString:@"AD_STORAGE"]) {
+        return FIRConsentTypeAdStorage;
+    } else if ([consentTypeString isEqualToString:@"AD_PERSONALIZATION"]) {
+        return FIRConsentTypeAdPersonalization;
+    } else if ([consentTypeString isEqualToString:@"AD_USER_DATA"]) {
+        return FIRConsentTypeAdUserData;
+    } else {
+        return nil;
+    }
+}
+
+- (NSString*)consentStatusFromString:(NSString*)consentStatusString {
+    if ([consentStatusString isEqualToString:@"GRANTED"]) {
+        return FIRConsentStatusGranted;
+    } else if ([consentStatusString isEqualToString:@"DENIED"]) {
+        return FIRConsentStatusDenied;
+    } else {
+        return nil;
+    }
+}
+
 - (void)logEvent:(CDVInvokedUrlCommand *)command {
     [self.commandDelegate runInBackground:^{
         @try {
@@ -1641,7 +1737,7 @@ static FIROAuthProvider* oauthProvider;
             }else if([userIdentifier objectForKey:@"phoneNumber"] != nil){
                 [FIRAnalytics initiateOnDeviceConversionMeasurementWithPhoneNumber:[userIdentifier objectForKey:@"phoneNumber"]];
             }
-            
+
             [self sendPluginSuccess:command];
         }@catch (NSException *exception) {
             [self handlePluginExceptionWithContext:exception :command];
@@ -2611,7 +2707,6 @@ static FIROAuthProvider* oauthProvider;
     }];
 }
 
-
 /*************************************************/
 #pragma mark - utility functions
 /*************************************************/
@@ -2737,6 +2832,31 @@ static FIROAuthProvider* oauthProvider;
 
 - (void)executeGlobalJavascript: (NSString*)jsString
 {
+    if(pluginInitialized){
+        [self doExecuteGlobalJavascript:jsString];
+    }else{
+        if(pendingGlobalJS == nil){
+            pendingGlobalJS = [[NSMutableArray alloc] init];
+        }
+        [pendingGlobalJS addObject:jsString];
+    }
+}
+
+- (void) executePendingGlobalJavascript
+{
+    if(pendingGlobalJS == nil){
+        NSLog(@"%@ No pending global JS calls", LOG_TAG);
+        return;
+    }
+    NSLog(@"%@ Executing %lu pending global JS calls", LOG_TAG, (unsigned long)pendingGlobalJS.count);
+    for (NSString* jsString in pendingGlobalJS) {
+        [self doExecuteGlobalJavascript:jsString];
+    }
+    pendingGlobalJS = nil;
+}
+
+- (void)doExecuteGlobalJavascript: (NSString*)jsString
+{
     [self.commandDelegate evalJs:jsString];
 }
 
@@ -2828,7 +2948,7 @@ static FIROAuthProvider* oauthProvider;
          }else{
              pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:true];
          }
-        
+
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
      }@catch (NSException *exception) {
          [self handlePluginExceptionWithContext:exception :command];
@@ -2912,28 +3032,28 @@ static FIROAuthProvider* oauthProvider;
 
 # pragma mark - Stubs
 - (void)createChannel:(CDVInvokedUrlCommand *)command {
-	[self.commandDelegate runInBackground:^{
+    [self.commandDelegate runInBackground:^{
         CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
     }];
 }
 
 - (void)setDefaultChannel:(CDVInvokedUrlCommand *)command {
-	[self.commandDelegate runInBackground:^{
+    [self.commandDelegate runInBackground:^{
         CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
     }];
 }
 
 - (void)deleteChannel:(CDVInvokedUrlCommand *)command {
-	[self.commandDelegate runInBackground:^{
+    [self.commandDelegate runInBackground:^{
         CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
     }];
 }
 
 - (void)listChannels:(CDVInvokedUrlCommand *)command {
-	[self.commandDelegate runInBackground:^{
+    [self.commandDelegate runInBackground:^{
         CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
     }];

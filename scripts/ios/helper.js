@@ -10,14 +10,51 @@ var plist = require('plist');
  */
 var comment = "\"Crashlytics\"";
 
-var versionRegex = /\d+\.\d+\.\d+/,
-    firebasePodRegex = /pod 'Firebase\/([^']+)', '(\d+\.\d+\.\d+)'/g,
-    standardFirestorePodRegEx = /pod 'Firebase\/Firestore', '(\d+\.\d+\.\d+)'/,
-    googleSignInPodRegEx = /pod 'GoogleSignIn', '(\d+\.\d+\.\d+)'/,
-    googleTagManagerPodRegEx = /pod 'GoogleTagManager', '(\d+\.\d+\.\d+)'/,
+var versionRegex = /\d+\.\d+\.\d+[^'"]*/,
+    firebasePodRegex = /pod 'Firebase([^']+)', '(\d+\.\d+\.\d+[^'"]*)'/g,
+    inAppMessagingPodRegEx = /pod 'FirebaseInAppMessaging', '(\d+\.\d+\.\d+[^'"]*)'/,
+    standardFirestorePodRegEx = /pod 'FirebaseFirestore', '(\d+\.\d+\.\d+[^'"]*)'/,
+    googleSignInPodRegEx = /pod 'GoogleSignIn', '(\d+\.\d+\.\d+[^'"]*)'/,
+    googleTagManagerPodRegEx = /pod 'GoogleTagManager', '(\d+\.\d+\.\d+[^'"]*)'/,
     prebuiltFirestorePodTemplate = "pod 'FirebaseFirestore', :tag => '{version}', :git => 'https://github.com/invertase/firestore-ios-sdk-frameworks.git'",
-    iosDeploymentTargetPodRegEx = /platform :ios, '(\d+\.\d+)'/;
+    iosDeploymentTargetPodRegEx = /platform :ios, '(\d+\.\d+\.?\d*)'/;
 
+// Internal functions
+function ensureUrlSchemeInPlist(urlScheme, appPlist){
+    var appPlistModified = false;
+    if(!appPlist['CFBundleURLTypes']) appPlist['CFBundleURLTypes'] = [];
+    var entry, entryIndex, i, j, alreadyExists = false;
+
+    for(i=0; i<appPlist['CFBundleURLTypes'].length; i++){
+        var thisEntry = appPlist['CFBundleURLTypes'][i];
+        if(thisEntry['CFBundleURLSchemes']){
+            for(j=0; j<thisEntry['CFBundleURLSchemes'].length; j++){
+                if(thisEntry['CFBundleURLSchemes'][j] === urlScheme){
+                    alreadyExists = true;
+                    break;
+                }
+            }
+        }
+        if(thisEntry['CFBundleTypeRole'] === 'Editor'){
+            entry = thisEntry;
+            entryIndex = i;
+        }
+    }
+    if(!alreadyExists){
+        if(!entry) entry = {};
+        if(!entry['CFBundleTypeRole']) entry['CFBundleTypeRole'] = 'Editor';
+        if(!entry['CFBundleURLSchemes']) entry['CFBundleURLSchemes'] = [];
+        entry['CFBundleURLSchemes'].push(urlScheme)
+        if(typeof entryIndex === "undefined") entryIndex = i;
+        appPlist['CFBundleURLTypes'][entryIndex] = entry;
+        appPlistModified = true;
+        utilities.log('cordova-plugin-firebasex: Added URL scheme "'+urlScheme+'"');
+    }
+
+    return {plist: appPlist, modified: appPlistModified}
+}
+
+// Public functions
 module.exports = {
 
     /**
@@ -47,6 +84,10 @@ module.exports = {
         // Generate a unique ID for our new build phase.
         var id = xcodeProject.generateUuid();
         // Create the build phase.
+        if (!xcodeProject.hash.project.objects.PBXShellScriptBuildPhase) {
+            xcodeProject.hash.project.objects.PBXShellScriptBuildPhase = {};
+        }
+
         xcodeProject.hash.project.objects.PBXShellScriptBuildPhase[id] = {
             isa: "PBXShellScriptBuildPhase",
             buildActionMask: 2147483647,
@@ -187,7 +228,8 @@ module.exports = {
             podFilePath = iosPlatform.podFile,
             podFile = fs.readFileSync(path.resolve(podFilePath)).toString(),
             DEBUG_INFORMATION_FORMAT = pluginVariables['IOS_STRIP_DEBUG'] && pluginVariables['IOS_STRIP_DEBUG'] === 'true' ? 'dwarf' : 'dwarf-with-dsym',
-            IPHONEOS_DEPLOYMENT_TARGET = podFile.match(iosDeploymentTargetPodRegEx)[1];
+            iosDeploymentTargetMatch = podFile.match(iosDeploymentTargetPodRegEx),
+            IPHONEOS_DEPLOYMENT_TARGET = iosDeploymentTargetMatch ? iosDeploymentTargetMatch[1] : null;
 
         if(!podFile.match('post_install')){
             podFile += `
@@ -195,7 +237,7 @@ post_install do |installer|
     installer.pods_project.targets.each do |target|
         target.build_configurations.each do |config|
             config.build_settings['DEBUG_INFORMATION_FORMAT'] = '${DEBUG_INFORMATION_FORMAT}'
-            config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '${IPHONEOS_DEPLOYMENT_TARGET}'
+            ${IPHONEOS_DEPLOYMENT_TARGET ? "config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '"+IPHONEOS_DEPLOYMENT_TARGET + "'" : ""}
             if target.respond_to?(:product_type) and target.product_type == "com.apple.product-type.bundle"
                 config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
             end
@@ -230,29 +272,37 @@ end
             googlePlist["FirebaseCrashlyticsCollectionEnabled"] = (pluginVariables['FIREBASE_CRASHLYTICS_COLLECTION_ENABLED'] !== "false" ? "true" : "false") ;
             googlePlistModified = true;
         }
+        if (typeof pluginVariables['GOOGLE_ANALYTICS_ADID_COLLECTION_ENABLED'] !== 'undefined') {
+            googlePlist["GOOGLE_ANALYTICS_ADID_COLLECTION_ENABLED"] = (pluginVariables['GOOGLE_ANALYTICS_ADID_COLLECTION_ENABLED'] !== "false" ? "true" : "false");
+            googlePlistModified = true;
+        }
+        if (typeof pluginVariables['GOOGLE_ANALYTICS_DEFAULT_ALLOW_ANALYTICS_STORAGE'] !== 'undefined') {
+            googlePlist["GOOGLE_ANALYTICS_DEFAULT_ALLOW_ANALYTICS_STORAGE"] = (pluginVariables['GOOGLE_ANALYTICS_DEFAULT_ALLOW_ANALYTICS_STORAGE'] !== "false" ? "true" : "false");
+            googlePlistModified = true;
+        }
+        if (typeof pluginVariables['GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_STORAGE'] !== 'undefined') {
+            googlePlist["GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_STORAGE"] = (pluginVariables['GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_STORAGE'] !== "false" ? "true" : "false");
+            googlePlistModified = true;
+        }
+        if (typeof pluginVariables['GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_USER_DATA'] !== 'undefined') {
+            googlePlist["GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_USER_DATA"] = (pluginVariables['GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_USER_DATA'] !== "false" ? "true" : "false");
+            googlePlistModified = true;
+        }
+        if (typeof pluginVariables['GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_PERSONALIZATION_SIGNALS'] !== 'undefined') {
+            googlePlist["GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_PERSONALIZATION_SIGNALS"] = (pluginVariables['GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_PERSONALIZATION_SIGNALS'] !== "false" ? "true" : "false");
+            googlePlistModified = true;
+        }
         if(typeof pluginVariables['IOS_SHOULD_ESTABLISH_DIRECT_CHANNEL'] !== 'undefined'){
             appPlist["shouldEstablishDirectChannel"] = (pluginVariables['IOS_SHOULD_ESTABLISH_DIRECT_CHANNEL'] === "true") ;
             appPlistModified = true;
         }
         if(pluginVariables['SETUP_RECAPTCHA_VERIFICATION'] === 'true'){
             var reversedClientId = googlePlist['REVERSED_CLIENT_ID'];
-
-            if(!appPlist['CFBundleURLTypes']) appPlist['CFBundleURLTypes'] = [];
-            var entry, i;
-            for(i=0; i<appPlist['CFBundleURLTypes'].length; i++){
-                if(typeof appPlist['CFBundleURLTypes'][i] === 'object' && appPlist['CFBundleURLTypes'][i]['CFBundleURLSchemes']){
-                    entry = appPlist['CFBundleURLTypes'][i];
-                    break;
-                }
+            var result = ensureUrlSchemeInPlist(reversedClientId, appPlist);
+            if(result.modified){
+                appPlist = result.plist;
+                appPlistModified = true;
             }
-            if(!entry) entry = {};
-            if(!entry['CFBundleTypeRole']) entry['CFBundleTypeRole'] = 'Editor';
-            if(!entry['CFBundleURLSchemes']) entry['CFBundleURLSchemes'] = [];
-            if(entry['CFBundleURLSchemes'].indexOf(reversedClientId) === -1){
-                entry['CFBundleURLSchemes'].push(reversedClientId)
-            }
-            appPlist['CFBundleURLTypes'][i] = entry;
-            appPlistModified = true;
         }
         if(pluginVariables['IOS_ENABLE_APPLE_SIGNIN'] === 'true'){
             entitlementsDebugPlist["com.apple.developer.applesignin"] = ["Default"];
@@ -290,14 +340,38 @@ end
     },
     applyPluginVarsToPodfile: function(pluginVariables, iosPlatform){
         var podFileContents = fs.readFileSync(path.resolve(iosPlatform.podFile), 'utf8'),
-            podFileModified = false;
+            podFileModified = false,
+            specifiedInAppMessagingVersion = false;
+
+        if(pluginVariables['IOS_FIREBASE_IN_APP_MESSAGING_VERSION']){
+            if(pluginVariables['IOS_FIREBASE_IN_APP_MESSAGING_VERSION'].match(versionRegex)){
+                specifiedInAppMessagingVersion = true;
+                var matches = podFileContents.match(inAppMessagingPodRegEx);
+                if(matches){
+                    matches.forEach((match) => {
+                        var currentVersion = match.match(versionRegex)[0];
+                        if(!match.match(pluginVariables['IOS_FIREBASE_IN_APP_MESSAGING_VERSION'])){
+                            podFileContents = podFileContents.replace(match, match.replace(currentVersion, pluginVariables['IOS_FIREBASE_IN_APP_MESSAGING_VERSION']));
+                            podFileModified = true;
+                        }
+                    });
+                    if(podFileModified) utilities.log("Firebase iOS InAppMessaging SDK version set to v"+pluginVariables['IOS_FIREBASE_IN_APP_MESSAGING_VERSION']+" in Podfile");
+                }
+            }else{
+                throw new Error("The value \""+pluginVariables['IOS_FIREBASE_IN_APP_MESSAGING_VERSION']+"\" for IOS_FIREBASE_IN_APP_MESSAGING_VERSION is not a valid semantic version format")
+            }
+        }
 
         if(pluginVariables['IOS_FIREBASE_SDK_VERSION']){
             if(pluginVariables['IOS_FIREBASE_SDK_VERSION'].match(versionRegex)){
                 var matches = podFileContents.match(firebasePodRegex);
                 if(matches){
-                    var currentVersion = matches[0].match(versionRegex)[0];
                     matches.forEach((match) => {
+                        if(match.match(inAppMessagingPodRegEx) && specifiedInAppMessagingVersion){
+                            return; // Skip Firebase In App Messaging pod if it was specified separately
+                        }
+
+                        var currentVersion = match.match(versionRegex)[0];
                         if(!match.match(pluginVariables['IOS_FIREBASE_SDK_VERSION'])){
                             podFileContents = podFileContents.replace(match, match.replace(currentVersion, pluginVariables['IOS_FIREBASE_SDK_VERSION']));
                             podFileModified = true;
@@ -306,7 +380,7 @@ end
                     if(podFileModified) utilities.log("Firebase iOS SDK version set to v"+pluginVariables['IOS_FIREBASE_SDK_VERSION']+" in Podfile");
                 }
             }else{
-                throw new Error("The value \""+pluginVariables['IOS_FIREBASE_SDK_VERSION']+"\" for IOS_FIREBASE_SDK_VERSION is not a valid version in the format 'X.Y.Z'")
+                throw new Error("The value \""+pluginVariables['IOS_FIREBASE_SDK_VERSION']+"\" for IOS_FIREBASE_SDK_VERSION is not a valid semantic version format")
             }
         }
 
@@ -314,8 +388,8 @@ end
             if(pluginVariables['IOS_GOOGLE_SIGIN_VERSION'].match(versionRegex)){
                 var matches = podFileContents.match(googleSignInPodRegEx);
                 if(matches){
-                    var currentVersion = matches[0].match(versionRegex)[0];
                     matches.forEach((match) => {
+                        var currentVersion = match.match(versionRegex)[0];
                         if(!match.match(pluginVariables['IOS_GOOGLE_SIGIN_VERSION'])){
                             podFileContents = podFileContents.replace(match, match.replace(currentVersion, pluginVariables['IOS_GOOGLE_SIGIN_VERSION']));
                             podFileModified = true;
@@ -324,7 +398,7 @@ end
                     if(podFileModified) utilities.log("Google Sign In version set to v"+pluginVariables['IOS_GOOGLE_SIGIN_VERSION']+" in Podfile");
                 }
             }else{
-                throw new Error("The value \""+pluginVariables['IOS_GOOGLE_SIGIN_VERSION']+"\" for IOS_GOOGLE_SIGIN_VERSION is not a valid version in the format 'X.Y.Z'")
+                throw new Error("The value \""+pluginVariables['IOS_GOOGLE_SIGIN_VERSION']+"\" for IOS_GOOGLE_SIGIN_VERSION is not a valid semantic version format")
             }
         }
 
@@ -332,8 +406,8 @@ end
             if(pluginVariables['IOS_GOOGLE_TAG_MANAGER_VERSION'].match(versionRegex)){
                 var matches = podFileContents.match(googleTagManagerPodRegEx);
                 if(matches){
-                    var currentVersion = matches[0].match(versionRegex)[0];
                     matches.forEach((match) => {
+                        var currentVersion = match.match(versionRegex)[0];
                         if(!match.match(pluginVariables['IOS_GOOGLE_TAG_MANAGER_VERSION'])){
                             podFileContents = podFileContents.replace(match, match.replace(currentVersion, pluginVariables['IOS_GOOGLE_TAG_MANAGER_VERSION']));
                             podFileModified = true;
@@ -342,7 +416,7 @@ end
                     if(podFileModified) utilities.log("Google Tag Manager version set to v"+pluginVariables['IOS_GOOGLE_TAG_MANAGER_VERSION']+" in Podfile");
                 }
             }else{
-                throw new Error("The value \""+pluginVariables['IOS_GOOGLE_TAG_MANAGER_VERSION']+"\" for IOS_GOOGLE_TAG_MANAGER_VERSION is not a valid version in the format 'X.Y.Z'")
+                throw new Error("The value \""+pluginVariables['IOS_GOOGLE_TAG_MANAGER_VERSION']+"\" for IOS_GOOGLE_TAG_MANAGER_VERSION is not a valid semantic version format")
             }
         }
 
@@ -359,5 +433,16 @@ end
         }
 
         return podFileModified;
+    },
+    ensureEncodedAppIdInUrlSchemes: function (iosPlatform){
+        var googlePlist = plist.parse(fs.readFileSync(path.resolve(iosPlatform.dest), 'utf8')),
+            appPlist = plist.parse(fs.readFileSync(path.resolve(iosPlatform.appPlist), 'utf8')),
+            googleAppId = googlePlist["GOOGLE_APP_ID"],
+            encodedAppId = 'app-'+googleAppId.replace(/:/g,'-');
+
+        var result = ensureUrlSchemeInPlist(encodedAppId, appPlist);
+        if(result.modified){
+            fs.writeFileSync(path.resolve(iosPlatform.appPlist), plist.build(result.plist));
+        }
     }
 };

@@ -9,6 +9,7 @@
  */
 var fs = require('fs');
 var path = require("path");
+var execSync = require('child_process').execSync;
 var utilities = require("./lib/utilities");
 
 var appName;
@@ -25,6 +26,7 @@ var setupEnv = function(){
     PLUGIN_ID = utilities.getPluginId();
     PLATFORM = {
         IOS: {
+            platformDir: IOS_DIR,
             dest: IOS_DIR + '/' + appName + '/Resources/GoogleService-Info.plist',
             src: [
                 'GoogleService-Info.plist',
@@ -34,8 +36,10 @@ var setupEnv = function(){
             appPlist: IOS_DIR + '/' + appName + '/' + appName + '-Info.plist',
             entitlementsDebugPlist: IOS_DIR + '/' + appName + '/Entitlements-Debug.plist',
             entitlementsReleasePlist: IOS_DIR + '/' + appName + '/Entitlements-Release.plist',
+            podFile: IOS_DIR + '/Podfile'
         },
         ANDROID: {
+            platformDir: ANDROID_DIR,
             dest: ANDROID_DIR + '/app/google-services.json',
             src: [
                 'google-services.json',
@@ -50,7 +54,8 @@ var setupEnv = function(){
             performanceGradlePlugin: {
                 classDef: 'com.google.firebase:perf-plugin',
                 pluginDef: 'com.google.firebase.firebase-perf'
-            }
+            },
+            manifestXml: ANDROID_DIR + '/app/src/main/AndroidManifest.xml',
         }
     };
 }
@@ -129,6 +134,16 @@ module.exports = function(context){
             androidHelper.addDependencyToRootGradle(PLATFORM.ANDROID.performanceGradlePlugin.classDef+":"+pluginVariables["ANDROID_FIREBASE_PERF_GRADLE_PLUGIN_VERSION"]);
             androidHelper.applyPluginToAppGradle(PLATFORM.ANDROID.performanceGradlePlugin.pluginDef);
         }
+
+        // Add tools namespace to manifest
+        if(fs.existsSync(path.resolve(PLATFORM.ANDROID.manifestXml))){
+            const manifestContents = fs.readFileSync(path.resolve(PLATFORM.ANDROID.manifestXml)).toString();
+            if(!manifestContents.match(`xmlns:tools="http://schemas.android.com/tools"`)){
+                const manifestWithTools = manifestContents.replace(/<manifest/g, `<manifest xmlns:tools="http://schemas.android.com/tools"`);
+                fs.writeFileSync(path.resolve(PLATFORM.ANDROID.manifestXml), manifestWithTools);
+                utilities.log('Added tools namespace to AndroidManifest.xml');
+            }
+        }
     }
 
     if(platforms.indexOf('ios') !== -1 && utilities.directoryExists(IOS_DIR)){
@@ -137,11 +152,19 @@ module.exports = function(context){
 
         var helper = require("./ios/helper");
         var xcodeProjectPath = helper.getXcodeProjectPath();
+        var podFileModified = false;
         helper.ensureRunpathSearchPath(context, xcodeProjectPath);
-
-        if(pluginVariables['IOS_STRIP_DEBUG'] && pluginVariables['IOS_STRIP_DEBUG'] === 'true'){
-            helper.stripDebugSymbols();
-        }
+        podFileModified = helper.applyPodsPostInstall(pluginVariables, PLATFORM.IOS);
         helper.applyPluginVarsToPlists(pluginVariables, PLATFORM.IOS);
+        helper.ensureEncodedAppIdInUrlSchemes(PLATFORM.IOS)
+        podFileModified = helper.applyPluginVarsToPodfile(pluginVariables, PLATFORM.IOS) || podFileModified;
+
+        if(podFileModified){
+            utilities.log('Updating installed Pods');
+            execSync('pod install', {
+                cwd: path.resolve(PLATFORM.IOS.platformDir),
+                encoding: 'utf8'
+            });
+        }
     }
 };
